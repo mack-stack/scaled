@@ -46,7 +46,6 @@ export default function Customers({ selectedCustomer, onSelectCustomer }) {
           <thead>
             <tr>
               <th>Company</th>
-              <th>Contact</th>
               <th>Segment</th>
               <th>Plan</th>
               <th>ARR</th>
@@ -59,7 +58,6 @@ export default function Customers({ selectedCustomer, onSelectCustomer }) {
             {customers.map((c) => (
               <tr key={c.id} onClick={() => onSelectCustomer?.(c.id)} style={{ cursor: 'pointer' }}>
                 <td>{c.company}</td>
-                <td>{c.name}</td>
                 <td>{(c.segment || '').replace(/_/g, ' ')}</td>
                 <td>{(c.plan_tier || '').replace(/_/g, ' ')}</td>
                 <td>${(c.arr || 0).toLocaleString()}</td>
@@ -77,8 +75,7 @@ export default function Customers({ selectedCustomer, onSelectCustomer }) {
           <h3>{detail.company}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <div className="detail-row"><span className="detail-label">Contact</span><span>{detail.name}</span></div>
-              <div className="detail-row"><span className="detail-label">Email</span><span>{detail.email}</span></div>
+              <div className="detail-row"><span className="detail-label">Evidence</span><span style={{fontSize:'12px'}}>{detail.evidence || '—'}</span></div>
               <div className="detail-row"><span className="detail-label">Segment</span><span>{(detail.segment || '').replace(/_/g, ' ')}</span></div>
               <div className="detail-row"><span className="detail-label">Plan</span><span>{(detail.plan_tier || '').replace(/_/g, ' ')}</span></div>
               <div className="detail-row"><span className="detail-label">Seats</span><span>{detail.seats}</span></div>

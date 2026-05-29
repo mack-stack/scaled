@@ -1,12 +1,11 @@
 import {
-  DEMO_CUSTOMERS, DEMO_PORTFOLIO, DEMO_TOKEN_HEALTH, DEMO_TOKEN_HEALTH_DETAIL,
-  DEMO_INCIDENTS, DEMO_INCIDENT_DETAIL, DEMO_ONBOARDING_FUNNEL,
+  DEMO_CUSTOMERS, DEMO_PORTFOLIO, DEMO_TOKEN_HEALTH,
+  DEMO_INCIDENTS, DEMO_ONBOARDING_FUNNEL,
   DEMO_PLAYS, DEMO_PLAY_HISTORY,
 } from './demo-data';
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// Track whether the API is reachable
 let apiOnline = null;
 
 async function checkApi() {
@@ -25,7 +24,7 @@ async function fetchJSON(path, fallback) {
     try {
       const res = await fetch(`${BASE}${path}`);
       if (res.ok) return res.json();
-    } catch { /* fall through to demo */ }
+    } catch { /* fall through */ }
   }
   if (fallback !== undefined) return fallback;
   throw new Error('API unavailable and no demo data for this endpoint');
@@ -61,86 +60,212 @@ async function putJSON(path, body = {}, fallback) {
   throw new Error('API unavailable — connect a backend for live actions');
 }
 
-// Customers
+// ── Customers ──
 export const getCustomers = (segment) => {
   const fallback = segment
     ? { customers: DEMO_CUSTOMERS.customers.filter(c => c.segment === segment), total: 0 }
     : DEMO_CUSTOMERS;
   return fetchJSON(`/api/customers${segment ? `?segment=${segment}` : ''}`, fallback);
 };
+
 export const getCustomer = (id) => {
   const c = DEMO_CUSTOMERS.customers.find(c => c.id === id);
-  return fetchJSON(`/api/customers/${id}`, c ? { ...c, email: `${c.name.split(' ')[0].toLowerCase()}@${c.company.toLowerCase().replace(/ /g, '')}.com`, usage_by_model: [], usage_by_endpoint: [], daily_spend: [] } : undefined);
+  if (!c) return fetchJSON(`/api/customers/${id}`, undefined);
+  return fetchJSON(`/api/customers/${id}`, {
+    ...c,
+    email: null,
+    usage_by_model: c.model_mix ? [
+      { model: "opus", input_tokens: 0, output_tokens: 0, cost: Math.round((c.spend_30d || 0) * (c.model_mix.opus_pct / 100)), events: 0 },
+      { model: "sonnet", input_tokens: 0, output_tokens: 0, cost: Math.round((c.spend_30d || 0) * (c.model_mix.sonnet_pct / 100)), events: 0 },
+      { model: "haiku", input_tokens: 0, output_tokens: 0, cost: Math.round((c.spend_30d || 0) * (c.model_mix.haiku_pct / 100)), events: 0 },
+    ] : [],
+    usage_by_endpoint: (c.known_products || []).map(p => ({ endpoint: p, cost: 0, events: 0 })),
+    daily_spend: [],
+  });
 };
 
-// Token Health
+// ── Token Health ──
 export const getTokenHealthSummary = () => fetchJSON('/api/token-health/', DEMO_TOKEN_HEALTH);
-export const getTokenHealth = (id) => fetchJSON(`/api/token-health/${id}`, DEMO_TOKEN_HEALTH_DETAIL);
+
+export const getTokenHealth = (id) => {
+  const c = DEMO_CUSTOMERS.customers.find(c => c.id === id);
+  if (!c) return fetchJSON(`/api/token-health/${id}`, {});
+  return fetchJSON(`/api/token-health/${id}`, {
+    customer_id: c.id,
+    company: c.company,
+    segment: c.segment,
+    plan_tier: c.plan_tier,
+    score: c.health_score,
+    status: c.health_status,
+    signals: {
+      total_spend: c.spend_30d || 0,
+      daily_spend: Math.round((c.spend_30d || 0) / 30),
+      projected_monthly_spend: c.spend_30d || 0,
+      monthly_commitment: c.monthly_commitment || 0,
+      burn_rate_pct: c.monthly_commitment > 0 ? Math.round((c.spend_30d / c.monthly_commitment) * 100 * 10) / 10 : null,
+      model_mix: c.model_mix,
+      percentile: c.percentile_label || 'Unknown',
+    },
+    recommendations: [
+      `${c.company} is in the ${c.percentile_label || 'unknown'} percentile of Anthropic's 300K customer base.`,
+      c.model_mix?.opus_pct > 40 ? `${c.model_mix.opus_pct}% Opus usage detected. For routine tasks, switching to Sonnet or Haiku could reduce costs 60-80%.` : null,
+      `Review champion benchmarks — top performers like Notion achieve 90% cost reduction via prompt caching.`,
+    ].filter(Boolean),
+    analysis: `Analysis derived from public signals. ${c.evidence || ''} Connect an ANTHROPIC_API_KEY for Claude-generated deep analysis.`,
+    analysis_source: "demo_inference",
+  });
+};
+
 export const getTokenHealthHistory = (id) => fetchJSON(`/api/token-health/${id}/history`, { history: [] });
-export const getTokenRecommendations = (id) => fetchJSON(`/api/token-health/${id}/recommendations`, DEMO_TOKEN_HEALTH_DETAIL);
+export const getTokenRecommendations = (id) => getTokenHealth(id);
 export const runTokenHealthScan = (segment) => postJSON('/api/token-health/scan', segment ? { segment } : {}, DEMO_TOKEN_HEALTH);
 
-// Incidents
+// ── Incidents ──
 export const getIncidents = () => fetchJSON('/api/incidents/', DEMO_INCIDENTS);
 export const getActiveIncidents = () => fetchJSON('/api/incidents/active', { incidents: [] });
-export const getIncident = (id) => fetchJSON(`/api/incidents/${id}`, DEMO_INCIDENT_DETAIL);
+
+// Build incident detail with computed impact from customer model mix
+function buildIncidentDetail(incidentId) {
+  const incident = DEMO_INCIDENTS.incidents.find(i => i.id === incidentId) || DEMO_INCIDENTS.incidents[0];
+  const tiers = { critical_impact: [], high_impact: [], moderate_impact: [], low_impact: [], not_impacted: [] };
+
+  DEMO_CUSTOMERS.customers.forEach(c => {
+    const exposure = c.incident_exposure || {};
+    let overlap = 0;
+    (incident.affected_models || []).forEach(m => {
+      if (m === 'opus' && exposure.opus_incidents) overlap += c.model_mix?.opus_pct || 0;
+      if (m === 'sonnet' && exposure.sonnet_incidents) overlap += c.model_mix?.sonnet_pct || 0;
+      if (m === 'haiku' && exposure.haiku_incidents) overlap += c.model_mix?.haiku_pct || 0;
+    });
+    (incident.affected_services || []).forEach(s => {
+      if (s === 'claude_code' && exposure.claude_code_incidents) overlap += 15;
+      if (s === 'api') overlap += 10;
+      if (s === 'integrations' && exposure.mcp_incidents) overlap += 10;
+    });
+    const score = Math.min(Math.round(overlap), 100);
+    const entry = { customer_id: c.id, company: c.company, impact_score: score, arr: c.arr, seats: c.seats };
+    if (score >= 70) tiers.critical_impact.push(entry);
+    else if (score >= 45) tiers.high_impact.push(entry);
+    else if (score >= 20) tiers.moderate_impact.push(entry);
+    else if (score > 0) tiers.low_impact.push(entry);
+    else tiers.not_impacted.push(entry);
+  });
+  Object.values(tiers).forEach(t => t.sort((a, b) => b.arr - a.arr));
+  const impacted = DEMO_CUSTOMERS.total - tiers.not_impacted.length;
+
+  return {
+    incident,
+    impact: { total_customers: DEMO_CUSTOMERS.total, impacted_customers: impacted, tiers },
+  };
+}
+
+export const getIncident = (id) => fetchJSON(`/api/incidents/${id}`, buildIncidentDetail(id));
 export const createIncident = (data) => postJSON('/api/incidents/', data);
 export const resolveIncident = (id) => putJSON(`/api/incidents/${id}/resolve`);
-export const assessIncident = (id) => postJSON(`/api/incidents/${id}/assess`, {}, DEMO_INCIDENT_DETAIL);
-export const generateIncidentComms = (id) => postJSON(`/api/incidents/${id}/comms`, {}, { communications: [
-  { tier: "critical_impact", customer_name: "PwC", subject: "Action Required: Multi-Model Error Rates — Impact on Your Claude Deployment", body: "Hi PwC Partner Team,\n\nI'm reaching out because our monitoring identified that PwC's deployment was directly impacted by the elevated error rates across Opus 4.7, Sonnet 4.6, and Haiku 4.5 on May 22nd.\n\nWith 30,000 active seats across your global practice, your team experienced approximately 4.5 hours of degraded API performance. Based on your usage patterns, Opus 4.7 accounts for the majority of your workloads, which was the most affected model.\n\nWhat happened: Multiple models experienced elevated error rates simultaneously, beginning at 04:16 UTC.\n\nWhat we did: Full resolution was achieved by 08:50 UTC. Root cause analysis is underway.\n\nWhat you should do:\n- Review any batch jobs submitted between 04:00-09:00 UTC May 22 for completion\n- If your teams experienced failed requests, they can be safely retried\n- We're providing a detailed impact report for your account within 48 hours\n\nI'd like to schedule a call with your AI Practice leadership to walk through the impact and our reliability improvements. Would Thursday work?\n\nBest,\nScaled CS Team" },
-  { tier: "high_impact", customer_name: "HubSpot", subject: "Update: May 22 Multi-Model Incident — Your Account Impact", body: "Hi HubSpot Product Team,\n\nFollowing up on the multi-model error rate incident on May 22 (04:16-08:50 UTC).\n\nHubSpot's Claude integration was impacted during this window. Your usage spans Sonnet 4.6 and Opus 4.7 — both affected models. We estimate approximately 12% of your API requests during this period received errors.\n\nThe issue has been fully resolved. All models are operating normally. If you'd like a detailed breakdown of your specific account impact, we're happy to provide one.\n\nBest,\nScaled CS Team" },
-  { tier: "moderate_impact", customer_name: "Jamf", subject: "FYI: Recent Claude Service Incident — Minimal Impact to Your Account", body: "Hi Jamf Team,\n\nA brief update: on May 22, we identified and resolved elevated error rates affecting multiple Claude models (4h 34m total duration). Based on your usage patterns, your account experienced minimal impact.\n\nNo action is needed on your end. Full details are available at status.claude.com.\n\nBest,\nScaled CS Team" },
-]});
+export const assessIncident = (id) => postJSON(`/api/incidents/${id}/assess`, {}, buildIncidentDetail(id));
+
+export const generateIncidentComms = (id) => {
+  const detail = buildIncidentDetail(id);
+  const topCritical = detail.impact.tiers.critical_impact.slice(0, 3);
+  const topHigh = detail.impact.tiers.high_impact.slice(0, 2);
+  const topMod = detail.impact.tiers.moderate_impact.slice(0, 1);
+
+  const comms = [];
+  topCritical.forEach(c => comms.push({
+    tier: "critical_impact", customer_name: c.company,
+    subject: `Action Required: ${detail.incident.title} — Impact on ${c.company}`,
+    body: `Hi ${c.company} Team,\n\nOur monitoring identified that ${c.company} was directly impacted by the ${detail.incident.title.toLowerCase()} on ${detail.incident.started_at?.split('T')[0]}.\n\nWith ${c.seats?.toLocaleString() || 'your'} active seats, your team experienced approximately ${((new Date(detail.incident.resolved_at) - new Date(detail.incident.started_at)) / 3600000).toFixed(1)} hours of degraded performance. Impact score: ${c.impact_score}/100.\n\nThe issue has been resolved. We're preparing a detailed impact report for your account.\n\nWould you have 30 minutes this week to walk through the specifics?\n\nBest,\nScaled CS Team`,
+  }));
+  topHigh.forEach(c => comms.push({
+    tier: "high_impact", customer_name: c.company,
+    subject: `Update: ${detail.incident.title} — ${c.company} Account Impact`,
+    body: `Hi ${c.company} Team,\n\nFollowing up on the ${detail.incident.title.toLowerCase()} (${detail.incident.started_at?.split('T')[0]}).\n\n${c.company}'s Claude integration was impacted during this window (impact score: ${c.impact_score}/100). The issue has been fully resolved.\n\nIf you'd like a detailed breakdown of your specific account impact, please don't hesitate to reach out.\n\nBest,\nScaled CS Team`,
+  }));
+  topMod.forEach(c => comms.push({
+    tier: "moderate_impact", customer_name: c.company,
+    subject: `FYI: Recent Claude Service Incident — Minimal Impact to ${c.company}`,
+    body: `Hi ${c.company} Team,\n\nA brief update: we identified and resolved ${detail.incident.title.toLowerCase()} on ${detail.incident.started_at?.split('T')[0]}. Based on your usage patterns, your account experienced minimal impact (score: ${c.impact_score}/100).\n\nNo action is needed. Full details at status.claude.com.\n\nBest,\nScaled CS Team`,
+  }));
+
+  return postJSON(`/api/incidents/${id}/comms`, {}, { communications: comms });
+};
+
 export const getIncidentComms = (id) => fetchJSON(`/api/incidents/${id}/comms`, { communications: [] });
 
-// Onboarding
+// ── Onboarding ──
 export const getOnboardingFunnel = () => fetchJSON('/api/onboarding/funnel', DEMO_ONBOARDING_FUNNEL);
-export const getOnboardingStatus = (id) => fetchJSON(`/api/onboarding/${id}`, {});
-export const getOnboardingNextSteps = (id) => fetchJSON(`/api/onboarding/${id}/next-steps`, {
-  stage: DEMO_CUSTOMERS.customers.find(c => c.id === id)?.onboarding_stage || 'signed_up',
-  next_steps: [
-    "You're currently using only the Messages API. Try the Batch API for your nightly data processing — it's 50% cheaper and handles bulk workloads efficiently.",
-    "Your cache hit rate is below 30%. Implement prompt caching for your repeated system prompts to save up to 90% on input tokens.",
-    "Consider upgrading from Sonnet to a mix of Haiku (for classification/routing) and Sonnet (for generation) — this model mix typically reduces costs 40% with minimal quality impact.",
-  ],
-  analysis: "Based on usage patterns, this account has room to optimize both cost and capability. The single-model, single-endpoint usage suggests early-stage integration that hasn't yet explored the full platform.",
-});
-export const getOnboardingJourney = (id) => fetchJSON(`/api/onboarding/${id}/journey`, { events: [] });
-export const runOnboardingScan = () => postJSON('/api/onboarding/scan', {}, { scanned: 16, changes: 0, stalls_detected: 3, plays_created: 2 });
 
-// Telemetry & Plays
+export const getOnboardingStatus = (id) => {
+  const c = DEMO_CUSTOMERS.customers.find(c => c.id === id);
+  return fetchJSON(`/api/onboarding/${id}`, c ? {
+    customer_id: c.id, company: c.company, stage: c.onboarding_stage,
+    evidence: c.evidence, known_products: c.known_products,
+  } : {});
+};
+
+export const getOnboardingNextSteps = (id) => {
+  const c = DEMO_CUSTOMERS.customers.find(c => c.id === id);
+  const stage = c?.onboarding_stage || 'signed_up';
+  const products = c?.known_products || [];
+  const usesCode = products.some(p => p.toLowerCase().includes('code'));
+  const usesMCP = products.some(p => p.toLowerCase().includes('mcp') || p.toLowerCase().includes('connector'));
+
+  const steps = [];
+  if (!usesCode) steps.push("Claude Code adoption: Top performers like Satispay produce 75% of code via Claude. Install Claude Code on every developer machine — IT-managed, not opt-in.");
+  if (!usesMCP) steps.push("MCP connector integration: Smartsheet saw 1.74M actions in week 1 of their MCP connector. Connect your existing tools to Claude for immediate workflow value.");
+  steps.push("Prompt caching: Notion achieved 90% cost reduction via caching. Implement on all repeated system prompts.");
+  if (stage !== 'champion') steps.push("Skill library: Brainlabs authored 400 reusable skills in 4 weeks across 1,000 employees. Start with the '3x rule' — if you do a task 3+ times, make it a Skill.");
+
+  return fetchJSON(`/api/onboarding/${id}/next-steps`, {
+    stage, company: c?.company,
+    next_steps: steps,
+    analysis: `${c?.company || 'This account'} is at the ${stage} stage. ${c?.evidence || ''} Next steps derived from champion benchmark patterns.`,
+  });
+};
+
+export const getOnboardingJourney = (id) => fetchJSON(`/api/onboarding/${id}/journey`, { events: [] });
+export const runOnboardingScan = () => postJSON('/api/onboarding/scan', {}, { scanned: DEMO_CUSTOMERS.total, changes: 0, stalls_detected: 0, plays_created: 0 });
+
+// ── Telemetry & Plays ──
 export const getPortfolio = () => fetchJSON('/api/telemetry/portfolio', DEMO_PORTFOLIO);
-export const getPortfolioReport = () => fetchJSON('/api/telemetry/portfolio/report', {
-  narrative: `WEEKLY PORTFOLIO REPORT — Scaled CS Platform\n\n` +
-    `EXECUTIVE SUMMARY\nThe portfolio of 16 accounts ($42.9M ARR) shows mixed health signals this week. ` +
-    `7 accounts are healthy, 4 need monitoring, 3 are at risk, and 1 is critical. Revenue at risk: $1.18M (2.7% of portfolio ARR). ` +
-    `The Industries segment is the primary concern — all 4 accounts score below 65.\n\n` +
+
+export const getPortfolioReport = () => {
+  const p = DEMO_PORTFOLIO;
+  const churn = DEMO_CUSTOMERS.customers.filter(c => c.churn);
+  const atRisk = DEMO_CUSTOMERS.customers.filter(c => c.at_risk && !c.churn);
+  const champions = DEMO_CUSTOMERS.customers.filter(c => c.onboarding_stage === 'champion' && !c.churn).slice(0, 3);
+
+  const narrative = `WEEKLY PORTFOLIO REPORT — Scaled CS Platform\n\n` +
+    `EXECUTIVE SUMMARY\n` +
+    `Portfolio: ${p.total_customers} accounts, $${(p.total_arr / 1000000000).toFixed(1)}B estimated ARR across 7 verticals. ` +
+    `${p.health_breakdown?.healthy || 0} healthy, ${p.health_breakdown?.at_risk || 0} at-risk, ${p.health_breakdown?.critical || 0} critical. ` +
+    `Revenue at risk: $${((p.revenue_at_risk || 0) / 1000000).toFixed(1)}M.\n\n` +
     `KEY RISKS\n` +
-    `• YMCA South Australia (critical, score: 12) — Zero meaningful usage 28 days post-signup. Small business team account at immediate churn risk. Trigger reactivation with SMB-specific onboarding content (reference the 15 agentic workflows launched May 13).\n` +
-    `• Syracuse University (at-risk, score: 35) — Higher Ed enterprise account ($300K ARR) stalled at first_workflow for 19 days. Academic procurement cycles may be slowing adoption. Offer a dedicated Higher Ed onboarding cohort.\n` +
-    `• Smartsheet (at-risk, score: 38) — Enterprise ($270K ARR) stalled at first_workflow for 22 days. Their product integration likely needs technical enablement support.\n` +
-    `• Jamf (at-risk, score: 42) — Enterprise ($360K ARR) integrated but health declining. Usage patterns suggest they hit a capability ceiling — recommend expansion use case workshop.\n\n` +
+    churn.map(c => `• ${c.company} — CHURNED. ${c.churn_reason}`).join('\n') + '\n' +
+    atRisk.map(c => `• ${c.company} — AT RISK. ${c.risk_reason}`).join('\n') + '\n\n' +
     `KEY WINS\n` +
-    `• Notion — Champion status, score 94. $2.1M ARR, fully activated across 350 seats. Building "a workspace for teams and agents." Prime candidate for reference program and case study.\n` +
-    `• Accenture — Champion status, score 88. $18M ARR, 30,000 professionals trained. The Claude Partner Network anchor. Expansion into additional practice areas is the play.\n` +
-    `• OpusClip — Champion in self-serve, score 87. Scaling API usage efficiently. Proof that the self-serve → champion path works without CSM touch.\n\n` +
-    `INCIDENT IMPACT\n` +
-    `May 22 multi-model outage (4h 34m) impacted 14 of 16 accounts. PwC and Accenture were in the critical tier due to their scale. ` +
-    `Opus 4.7 continues to show the highest incident frequency (12 incidents in 18 days) — likely correlated with it being the highest-traffic model. ` +
-    `Recommend proactive reliability comms to strategic accounts before the next occurrence.\n\n` +
-    `COMMUNITY INTELLIGENCE\n` +
-    `GitHub signal analysis shows quota/cost issues dominate community complaints (1,472 comments on #16157 alone). ` +
-    `Issue #38335 (740 comments) about Max plan quota drain aligns with our token health module findings. ` +
-    `Recommend a "Token Economics 101" webinar series targeting monitor-tier accounts — addresses the #1 community pain point proactively.\n\n` +
+    champions.map(c => `• ${c.company} — Champion. ${c.evidence?.substring(0, 100)}...`).join('\n') + '\n\n' +
+    `BELL CURVE INSIGHT\n` +
+    `These ${p.total_customers} accounts represent the top ~0.02% of Anthropic's 300K business customers. ` +
+    `They appear in case studies because they're top performers. The CS Programs Manager's job is to move the other 299,938 accounts toward these benchmark behaviors.\n\n` +
     `FOCUS AREAS THIS WEEK\n` +
-    `1. Execute the 5 pending plays (1 token optimization for Slack, 1 reactivation for YMCA SA, 2 onboarding nudges for Smartsheet/Syracuse, 1 expansion signal for Notion)\n` +
-    `2. Industries segment (avg score: 44.3) is the weakest — Jamf, Smartsheet, Pendo, and Syracuse all need attention. Consider an industry-specific onboarding cohort.\n` +
-    `3. Prepare proactive reliability communication template for the next Opus 4.7 incident — pattern suggests it's a matter of when, not if.\n\n` +
-    `Sources: status.claude.com, github.com/anthropics/claude-code, internal telemetry (simulated)\n` +
-    `Generated by Claude | Scaled CS Platform`,
-});
-export const getCustomerSignals = (id) => fetchJSON(`/api/telemetry/${id}/signals`, {});
+    `1. Execute ${DEMO_PLAYS.plays.length} pending plays (${DEMO_PLAYS.plays.map(p => p.play_type).filter((v,i,a) => a.indexOf(v) === i).join(', ')})\n` +
+    `2. Address churn: ${churn.map(c => c.company).join(', ')}\n` +
+    `3. Expand champions: ${champions.map(c => c.company).join(', ')} are reference program candidates\n\n` +
+    `Sources: status.claude.com, github.com/anthropics/claude-code, public filings, case studies\n` +
+    `Generated by Scaled CS Platform`;
+
+  return fetchJSON('/api/telemetry/portfolio/report', { narrative });
+};
+
+export const getCustomerSignals = (id) => {
+  const c = DEMO_CUSTOMERS.customers.find(c => c.id === id);
+  return fetchJSON(`/api/telemetry/${id}/signals`, c ? {
+    company: c.company, health_score: c.health_score, health_status: c.health_status,
+    percentile: c.percentile_label, evidence: c.evidence,
+  } : {});
+};
+
 export const getPlayQueue = () => fetchJSON('/api/telemetry/plays', DEMO_PLAYS);
 export const getPlayHistory = () => fetchJSON('/api/telemetry/plays/history', DEMO_PLAY_HISTORY);
 export const executePlay = (id) => postJSON(`/api/telemetry/plays/${id}/execute`, {}, { status: "completed", message: "Connect a backend API to execute plays with Claude-generated communications" });

@@ -127,7 +127,6 @@ export default function Onboarding() {
               <thead>
                 <tr>
                   <th>Company</th>
-                  <th>Contact</th>
                   <th>Stage</th>
                   <th>Segment</th>
                   <th>Action</th>
@@ -137,7 +136,7 @@ export default function Onboarding() {
                 {customers.map((c) => (
                   <tr key={c.id}>
                     <td>{c.company}</td>
-                    <td>{c.name}</td>
+                    
                     <td>{STAGE_LABELS[c.onboarding_stage] || c.onboarding_stage}</td>
                     <td>{(c.segment || '').replace(/_/g, ' ')}</td>
                     <td>

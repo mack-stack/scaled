@@ -107,7 +107,6 @@ export default function Portfolio() {
               <thead>
                 <tr>
                   <th>Company</th>
-                  <th>Contact</th>
                   <th>Segment</th>
                   <th>ARR</th>
                   <th>Health</th>
@@ -118,7 +117,7 @@ export default function Portfolio() {
                 {data.top_accounts_needing_attention.map((a) => (
                   <tr key={a.id}>
                     <td>{a.company}</td>
-                    <td>{a.name}</td>
+                    
                     <td>{(a.segment || '').replace(/_/g, ' ')}</td>
                     <td>${(a.arr || 0).toLocaleString()}</td>
                     <td><span className={`badge badge-${a.health_status}`}>{a.health_status}</span></td>
