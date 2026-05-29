@@ -54,11 +54,6 @@ export default function Plays() {
         <p>Signal-to-action mapping — automated CS engagement</p>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        <button className="btn btn-primary" onClick={detect} disabled={detecting}>
-          {detecting ? 'Detecting...' : 'Detect New Plays'}
-        </button>
-      </div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'queue' ? 'active' : ''}`} onClick={() => setTab('queue')}>
