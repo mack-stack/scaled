@@ -431,6 +431,25 @@ body {
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+/* Demo banner */
+.demo-banner {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.demo-banner span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 /* Utility */
 .text-green { color: var(--green); }
 .text-yellow { color: var(--yellow); }
