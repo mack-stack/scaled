@@ -21,26 +21,24 @@ export default function Incidents() {
     setDetail(null);
     setComms(null);
     getIncident(id).then(setDetail).catch(console.error);
-    getIncidentComms(id).then(setComms).catch(console.error);
   };
 
   const assess = (id) => {
     setAssessing(true);
-    assessIncident(id).then((res) => {
-      setDetail(res);
-      setAssessing(false);
-    }).catch(() => setAssessing(false));
+    assessIncident(id).then(setDetail).catch(console.error).finally(() => setAssessing(false));
   };
 
   const genComms = (id) => {
     setGeneratingComms(true);
-    generateIncidentComms(id).then((res) => {
-      setComms(res);
-      setGeneratingComms(false);
-    }).catch(() => setGeneratingComms(false));
+    generateIncidentComms(id).then(setComms).catch(console.error).finally(() => setGeneratingComms(false));
   };
 
   if (loading) return <div className="loading"><div className="spinner" />Loading incidents...</div>;
+
+  // Normalize detail — API may return { incident, impact } or flat
+  const inc = detail?.incident || detail;
+  const impact = detail?.impact;
+  const tiers = impact?.tiers;
 
   return (
     <div>
@@ -61,19 +59,19 @@ export default function Incidents() {
             </tr>
           </thead>
           <tbody>
-            {incidents.map((inc) => (
-              <tr key={inc.id}>
-                <td>{inc.title}</td>
+            {incidents.map((item) => (
+              <tr key={item.id}>
+                <td>{item.title}</td>
                 <td>
-                  <span className={`badge badge-${inc.severity === 'critical' ? 'critical' : inc.severity === 'high' ? 'at_risk' : 'monitor'}`}>
-                    {inc.severity}
+                  <span className={`badge badge-${item.severity === 'critical' ? 'critical' : item.severity === 'high' ? 'at_risk' : 'monitor'}`}>
+                    {item.severity}
                   </span>
                 </td>
-                <td>{(inc.affected_services || []).join(', ')}</td>
-                <td>{inc.is_active ? <span className="badge badge-critical">Active</span> : <span className="badge badge-healthy">Resolved</span>}</td>
+                <td>{(item.affected_services || []).join(', ')}</td>
+                <td>{item.is_active ? <span className="badge badge-critical">Active</span> : <span className="badge badge-healthy">Resolved</span>}</td>
                 <td>
-                  <button className="btn btn-sm" onClick={() => viewIncident(inc.id)}>
-                    {selected === inc.id ? 'Viewing' : 'View'}
+                  <button className="btn btn-sm" onClick={() => viewIncident(item.id)}>
+                    {selected === item.id ? 'Viewing' : 'View'}
                   </button>
                 </td>
               </tr>
@@ -82,38 +80,63 @@ export default function Incidents() {
         </table>
       </div>
 
-      {selected && detail && (
+      {selected && inc && (
         <div className="detail-panel">
-          <h3>{detail.title || detail.incident?.title || 'Incident Detail'}</h3>
-          <p className="text-muted" style={{ fontSize: '14px', marginBottom: '16px' }}>
-            {detail.description || detail.incident?.description}
+          <h3>{inc.title || 'Incident Detail'}</h3>
+          <p className="text-muted" style={{ fontSize: '14px', marginBottom: '8px' }}>
+            {inc.description}
           </p>
+          {inc.status_page_url && (
+            <a href={inc.status_page_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm mb-4" style={{ marginBottom: '12px', display: 'inline-block' }}>
+              View on status.claude.com
+            </a>
+          )}
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-4" style={{ marginTop: '12px' }}>
             <button className="btn btn-primary" onClick={() => assess(selected)} disabled={assessing}>
-              {assessing ? 'Assessing Impact...' : 'Assess Impact'}
+              {assessing ? 'Assessing...' : 'Assess Impact'}
             </button>
             <button className="btn btn-primary" onClick={() => genComms(selected)} disabled={generatingComms}>
-              {generatingComms ? 'Generating Comms...' : 'Generate Comms'}
+              {generatingComms ? 'Generating...' : 'Generate Comms'}
             </button>
           </div>
 
-          {detail.impact_tiers && (
-            <div className="mt-4">
-              <h4 style={{ fontSize: '14px', marginBottom: '12px' }}>Impact Assessment</h4>
-              {Object.entries(detail.impact_tiers).map(([tier, customers]) => (
-                <div key={tier} style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', color: tier.includes('critical') ? 'var(--red)' : tier.includes('high') ? 'var(--orange)' : 'var(--text-muted)', marginBottom: '4px' }}>
-                    {tier.replace(/_/g, ' ')} ({Array.isArray(customers) ? customers.length : 0})
-                  </div>
-                  {Array.isArray(customers) && customers.map((c, i) => (
-                    <div key={i} className="detail-row">
-                      <span>{c.company || c.name || c}</span>
-                      <span className="text-muted">{c.impact_score ? `Impact: ${c.impact_score}%` : ''}</span>
+          {impact && (
+            <div className="card-grid mb-4">
+              <div className="card">
+                <div className="card-label">Total Customers</div>
+                <div className="card-value">{impact.total_customers}</div>
+              </div>
+              <div className="card">
+                <div className="card-label">Impacted</div>
+                <div className="card-value text-orange">{impact.impacted_customers}</div>
+              </div>
+            </div>
+          )}
+
+          {tiers && (
+            <div>
+              {Object.entries(tiers).map(([tier, data]) => {
+                const customers = Array.isArray(data) ? data : data?.customers || data || [];
+                if (!Array.isArray(customers) || customers.length === 0) return null;
+                const count = data?.count || customers.length;
+                return (
+                  <div key={tier} style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: tier.includes('critical') ? 'var(--red)' : tier.includes('high') ? 'var(--orange)' : tier.includes('moderate') ? 'var(--yellow)' : 'var(--text-muted)', marginBottom: '4px' }}>
+                      {tier.replace(/_/g, ' ')} ({count})
                     </div>
-                  ))}
-                </div>
-              ))}
+                    {customers.map((c, i) => (
+                      <div key={i} className="detail-row">
+                        <span>{c.company || c.customer_name || c.name || c}</span>
+                        <span className="text-muted" style={{ display: 'flex', gap: '12px' }}>
+                          {c.arr ? <span>${(c.arr / 1000).toFixed(0)}K ARR</span> : null}
+                          {c.impact_score != null ? <span>Impact: {c.impact_score}</span> : null}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -124,13 +147,13 @@ export default function Incidents() {
           <div className="section-header">
             <h2>Generated Communications</h2>
           </div>
-          {(Array.isArray(comms.communications || comms) ? (comms.communications || comms) : []).map((comm, i) => (
+          {(comms.communications || []).map((comm, i) => (
             <div className="comm-preview" key={i}>
               <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
                 <span className={`badge badge-${comm.tier === 'critical_impact' ? 'critical' : comm.tier === 'high_impact' ? 'at_risk' : 'monitor'}`}>
                   {(comm.tier || 'general').replace(/_/g, ' ')}
                 </span>
-                <span style={{ fontSize: '13px' }}>{comm.customer_name || comm.company || ''}</span>
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>{comm.customer_name || ''}</span>
               </div>
               <h4>{comm.subject}</h4>
               <div className="body">{comm.body}</div>
