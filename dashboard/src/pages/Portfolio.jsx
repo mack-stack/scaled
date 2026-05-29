@@ -136,9 +136,30 @@ export default function Portfolio() {
           {reportLoading ? 'Generating...' : 'Generate Report'}
         </button>
       </div>
+
       {report && (
-        <div className="report-narrative">
-          {report.narrative || report.report || JSON.stringify(report, null, 2)}
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setReport(null); }}>
+          <div className="modal-panel" style={{ maxWidth: '800px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0 }}>Portfolio Report</h3>
+              <div className="flex gap-2">
+                <button className="btn btn-sm btn-primary" onClick={() => {
+                  const text = report.narrative || report.report || JSON.stringify(report, null, 2);
+                  const blob = new Blob([text], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `portfolio_report_${new Date().toISOString().split('T')[0]}.txt`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}>Download</button>
+                <button className="btn btn-sm" onClick={() => setReport(null)}>Close</button>
+              </div>
+            </div>
+            <div className="report-narrative">
+              {report.narrative || report.report || JSON.stringify(report, null, 2)}
+            </div>
+          </div>
         </div>
       )}
     </div>
