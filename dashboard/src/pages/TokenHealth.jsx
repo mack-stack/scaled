@@ -125,7 +125,7 @@ export default function TokenHealth() {
       )}
 
       {detail && (
-        <div className="detail-panel">
+        <div className="detail-panel" id="token-detail" ref={el => el?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
           <h3>Analysis: {detail.company || detail.customer_name || 'Customer'}</h3>
 
           <div className="card-grid">
