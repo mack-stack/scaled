@@ -69,9 +69,6 @@ export default function TokenHealth() {
 
       <div className="section-header">
         <h2>Portfolio Health</h2>
-        <button className="btn btn-primary" onClick={scan} disabled={scanning}>
-          {scanning ? 'Scanning...' : 'Run Health Scan'}
-        </button>
       </div>
 
       {summary && (

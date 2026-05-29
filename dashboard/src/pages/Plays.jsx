@@ -17,8 +17,8 @@ export default function Plays() {
   const [history, setHistory] = useState([]);
   const [tab, setTab] = useState('queue');
   const [loading, setLoading] = useState(true);
-  const [detecting, setDetecting] = useState(false);
   const [selectedPlay, setSelectedPlay] = useState(null);
+  const [typeFilter, setTypeFilter] = useState('');
 
   const refresh = () => {
     Promise.all([
@@ -55,6 +55,14 @@ export default function Plays() {
       </div>
 
 
+      <div className="flex gap-2 mb-4">
+        {['', 'churn_recovery', 'burn_rate_alert', 'onboarding_nudge', 'expansion_signal'].map(t => (
+          <button key={t} className={`btn btn-sm ${typeFilter === t ? 'btn-primary' : ''}`} onClick={() => setTypeFilter(t)}>
+            {t ? t.replace(/_/g, ' ') : 'All'}
+          </button>
+        ))}
+      </div>
+
       <div className="tabs">
         <button className={`tab ${tab === 'queue' ? 'active' : ''}`} onClick={() => setTab('queue')}>
           Queue ({queue.length})
@@ -68,7 +76,7 @@ export default function Plays() {
         queue.length === 0 ? (
           <div className="loading">No pending plays — run detection to find new signals</div>
         ) : (
-          queue.map((play) => (
+          queue.filter(p => !typeFilter || p.play_type === typeFilter).map((play) => (
             <div className="play-card" key={play.id} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div className="play-info">

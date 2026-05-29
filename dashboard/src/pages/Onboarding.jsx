@@ -59,9 +59,6 @@ export default function Onboarding() {
 
       <div className="section-header">
         <h2>Onboarding Funnel</h2>
-        <button className="btn btn-primary" onClick={scan} disabled={scanning}>
-          {scanning ? 'Scanning...' : 'Run Onboarding Scan'}
-        </button>
       </div>
 
       <div className="card mb-4" style={{ padding: '24px' }}>
