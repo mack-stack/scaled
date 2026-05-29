@@ -125,8 +125,12 @@ export default function TokenHealth() {
       )}
 
       {detail && (
-        <div className="detail-panel" id="token-detail" ref={el => el?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-          <h3>Analysis: {detail.company || detail.customer_name || 'Customer'}</h3>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setDetail(null); }}>
+        <div className="modal-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0 }}>Analysis: {detail.company || detail.customer_name || 'Customer'}</h3>
+            <button className="btn btn-sm" onClick={() => setDetail(null)}>Close</button>
+          </div>
 
           <div className="card-grid">
             <div className="card">
@@ -177,6 +181,7 @@ export default function TokenHealth() {
               </div>
             </div>
           )}
+        </div>
         </div>
       )}
     </div>

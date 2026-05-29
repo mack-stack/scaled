@@ -81,8 +81,12 @@ export default function Incidents() {
       </div>
 
       {selected && inc && (
-        <div className="detail-panel">
-          <h3>{inc.title || 'Incident Detail'}</h3>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setSelected(null); setDetail(null); setComms(null); } }}>
+        <div className="modal-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0 }}>{inc.title || 'Incident Detail'}</h3>
+            <button className="btn btn-sm" onClick={() => { setSelected(null); setDetail(null); setComms(null); }}>Close</button>
+          </div>
           <p className="text-muted" style={{ fontSize: '14px', marginBottom: '8px' }}>
             {inc.description}
           </p>
@@ -139,26 +143,25 @@ export default function Incidents() {
               })}
             </div>
           )}
-        </div>
-      )}
 
-      {comms && (
-        <div>
-          <div className="section-header">
-            <h2>Generated Communications</h2>
-          </div>
-          {(comms.communications || []).map((comm, i) => (
-            <div className="comm-preview" key={i}>
-              <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
-                <span className={`badge badge-${comm.tier === 'critical_impact' ? 'critical' : comm.tier === 'high_impact' ? 'at_risk' : 'monitor'}`}>
-                  {(comm.tier || 'general').replace(/_/g, ' ')}
-                </span>
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>{comm.customer_name || ''}</span>
-              </div>
-              <h4>{comm.subject}</h4>
-              <div className="body">{comm.body}</div>
+          {comms && (
+            <div className="mt-4">
+              <h4 style={{ fontSize: '14px', marginBottom: '12px' }}>Generated Communications</h4>
+              {(comms.communications || []).map((comm, i) => (
+                <div className="comm-preview" key={i}>
+                  <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
+                    <span className={`badge badge-${comm.tier === 'critical_impact' ? 'critical' : comm.tier === 'high_impact' ? 'at_risk' : 'monitor'}`}>
+                      {(comm.tier || 'general').replace(/_/g, ' ')}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{comm.customer_name || ''}</span>
+                  </div>
+                  <h4>{comm.subject}</h4>
+                  <div className="body">{comm.body}</div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+        </div>
         </div>
       )}
     </div>
