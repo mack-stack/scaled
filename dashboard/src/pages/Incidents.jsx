@@ -120,43 +120,42 @@ export default function Incidents() {
             </button>
           </div>
 
-          {impact && (
-            <div className="card-grid mb-4">
-              <div className="card">
-                <div className="card-label">Total Customers</div>
-                <div className="card-value">{impact.total_customers}</div>
+          {impact ? (
+            <>
+              <div className="card-grid mb-4">
+                <div className="card">
+                  <div className="card-label">Total Customers</div>
+                  <div className="card-value">{impact.total_customers}</div>
+                </div>
+                <div className="card">
+                  <div className="card-label">Impacted</div>
+                  <div className="card-value text-orange">{impact.impacted_customers}</div>
+                </div>
               </div>
-              <div className="card">
-                <div className="card-label">Impacted</div>
-                <div className="card-value text-orange">{impact.impacted_customers}</div>
-              </div>
-            </div>
-          )}
 
-          {tiers && (
-            <div>
-              {Object.entries(tiers).map(([tier, data]) => {
-                const customers = Array.isArray(data) ? data : data?.customers || data || [];
-                if (!Array.isArray(customers) || customers.length === 0) return null;
-                const count = data?.count || customers.length;
+              {tiers && Object.entries(tiers).map(([tier, data]) => {
+                const customers = Array.isArray(data) ? data : [];
+                if (customers.length === 0) return null;
                 return (
                   <div key={tier} style={{ marginBottom: '12px' }}>
                     <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: tier.includes('critical') ? 'var(--red)' : tier.includes('high') ? 'var(--orange)' : tier.includes('moderate') ? 'var(--yellow)' : 'var(--text-muted)', marginBottom: '4px' }}>
-                      {tier.replace(/_/g, ' ')} ({count})
+                      {tier.replace(/_/g, ' ')} ({customers.length})
                     </div>
                     {customers.map((c, i) => (
                       <div key={i} className="detail-row">
-                        <span>{c.company || c.customer_name || c.name || c}</span>
+                        <span>{c.company || ''}</span>
                         <span className="text-muted" style={{ display: 'flex', gap: '12px' }}>
-                          {c.arr ? <span>${(c.arr / 1000).toFixed(0)}K ARR</span> : null}
-                          {c.impact_score != null ? <span>Impact: {c.impact_score}</span> : null}
+                          {c.arr ? <span>${(c.arr / 1000000).toFixed(1)}M</span> : null}
+                          {c.impact_score != null ? <span>Score: {c.impact_score}</span> : null}
                         </span>
                       </div>
                     ))}
                   </div>
                 );
               })}
-            </div>
+            </>
+          ) : (
+            <p className="text-muted" style={{ fontSize: '13px' }}>Click "Assess Impact" to compute customer impact from model mix overlap.</p>
           )}
 
           {comms && (
