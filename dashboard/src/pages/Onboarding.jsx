@@ -153,40 +153,43 @@ export default function Onboarding() {
       )}
 
       {selectedCustomer && (
-        <div className="detail-panel mt-4">
-          <h3>Next Steps</h3>
-          {stepsLoading ? (
-            <div className="loading"><div className="spinner" />Generating with Claude...</div>
-          ) : nextSteps ? (
-            <div>
-              {nextSteps.stage && (
-                <div className="detail-row">
-                  <span className="detail-label">Current Stage</span>
-                  <span>{STAGE_LABELS[nextSteps.stage] || nextSteps.stage}</span>
-                </div>
-              )}
-              {nextSteps.next_steps && (
-                <div className="mt-4">
-                  {(Array.isArray(nextSteps.next_steps) ? nextSteps.next_steps : [nextSteps.next_steps]).map((step, i) => (
-                    <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '14px' }}>
-                      {typeof step === 'string' ? step : step.recommendation || step.action || JSON.stringify(step)}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {nextSteps.analysis && (
-                <div className="report-narrative mt-4">{nextSteps.analysis}</div>
-              )}
-              {nextSteps.draft_email && (
-                <div className="comm-preview mt-4">
-                  <h4>Draft Nudge Email</h4>
-                  <div className="body">{nextSteps.draft_email}</div>
-                </div>
-              )}
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setSelectedCustomer(null); setNextSteps(null); } }}>
+          <div className="modal-panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0 }}>Next Steps {nextSteps?.company ? `— ${nextSteps.company}` : ''}</h3>
+              <button className="btn btn-sm" onClick={() => { setSelectedCustomer(null); setNextSteps(null); }}>Close</button>
             </div>
-          ) : (
-            <p className="text-muted">No data available</p>
-          )}
+            {stepsLoading ? (
+              <div className="loading"><div className="spinner" />Loading recommendations...</div>
+            ) : nextSteps ? (
+              <div>
+                {nextSteps.stage && (
+                  <div className="detail-row">
+                    <span className="detail-label">Current Stage</span>
+                    <span className={`badge badge-${nextSteps.stage === 'champion' ? 'healthy' : nextSteps.stage === 'scaling' ? 'healthy' : 'monitor'}`}>{STAGE_LABELS[nextSteps.stage] || nextSteps.stage}</span>
+                  </div>
+                )}
+                {nextSteps.next_steps && (
+                  <div className="mt-4">
+                    <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>Recommendations (from champion benchmarks)</h4>
+                    {(Array.isArray(nextSteps.next_steps) ? nextSteps.next_steps : [nextSteps.next_steps]).map((step, i) => (
+                      <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '14px', lineHeight: '1.6' }}>
+                        {typeof step === 'string' ? step : step.recommendation || step.action || JSON.stringify(step)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {nextSteps.analysis && (
+                  <div className="mt-4">
+                    <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>Evidence</h4>
+                    <div className="report-narrative">{nextSteps.analysis}</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-muted">No data available</p>
+            )}
+          </div>
         </div>
       )}
     </div>
