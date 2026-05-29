@@ -131,6 +131,100 @@ const TOKENS_PER_USER_MONTH = {
 
 
 // ============================================================
+// AI DISPLACEMENT SIGNALS: Layoffs in specific departments → higher Claude spend
+// Source: Public layoff announcements, CEO statements, press coverage
+// Logic: If a company cut N roles in a department AND deployed Claude in that function,
+// the displaced headcount × avg salary × ~30% = estimated AI replacement spend
+// ============================================================
+
+const AI_DISPLACEMENT = {
+  "Accenture": {
+    layoffs: 22000, year: "2025", departments: ["consulting delivery"],
+    correlation: "explicit", ceo_quote: "upskilling reinventors with LLM training",
+    spend_signal: "very_high",
+    source: "insiderph.com/accenture-job-cuts-hit-22000-in-2025",
+  },
+  "PwC": {
+    layoffs: 5600, year: "2024-2025", departments: ["audit", "tax", "IT", "business services"],
+    correlation: "explicit", ceo_quote: "employees who avoid AI are not going to be here that long",
+    spend_signal: "very_high",
+    source: "thefinancestory.com/pwc-us-lays-off-1500-people-in-2025",
+  },
+  "Slack": {
+    layoffs: 5000, year: "2025", departments: ["customer support"], parent_layoffs: true,
+    correlation: "explicit", ceo_quote: "I reduced it from 9,000 heads to about 5,000 because I need less heads",
+    spend_signal: "high",
+    source: "cnbc.com/2025/09/02/salesforce-ceo-confirms-4000-layoffs",
+  },
+  "Jamf": {
+    layoffs: 336, year: "2024-2025", departments: ["cross-functional"],
+    correlation: "explicit", statement: "layoffs fund accelerating investments in AI capabilities",
+    spend_signal: "high",
+    source: "bringmethenews.com/jamf-to-lay-off-6-of-staff-as-it-boosts-ai-investment",
+  },
+  "Pendo": {
+    layoffs: 90, year: "2026", departments: ["engineering", "sales", "customer success"],
+    correlation: "explicit", ceo_quote: "rapid adoption of artificial intelligence tools",
+    spend_signal: "moderate",
+    source: "axios.com/local/raleigh/2026/04/07/raleigh-software-unicorn-pendo-layoffs",
+  },
+  "Retool": {
+    layoffs_pct: 9, year: "2026", departments: ["customer success (entire team)", "recruiting"],
+    correlation: "strong", statement: "CS team eliminated while building AI self-service tools",
+    spend_signal: "moderate",
+    source: "teamblind.com/post/retool-lays-off-customer-success-recruiting",
+  },
+  "Twilio": {
+    layoffs: 4000, year: "2022-2025", departments: ["GTM", "marketing", "finance"],
+    correlation: "implied", metric: "revenue per employee surged 55%",
+    spend_signal: "moderate",
+    source: "linkedin.com/posts/rubendominguezibar_the-saas-efficiency-era",
+  },
+  "Microsoft": {
+    layoffs: 15000, year: "2024-2025", departments: ["engineering", "legal", "PM", "cloud"],
+    correlation: "explicit", ceo_quote: "GitHub Copilot writes 30% of new code, reducing need for support teams",
+    spend_signal: "high",
+    source: "seattletimes.com/business/microsoft/behind-microsofts-layoffs-a-new-attitude-shaped-by-ai",
+  },
+  "HubSpot": {
+    layoffs: null, year: "2024-2025", departments: ["content design", "user research", "marketing"],
+    correlation: "strong", statement: "Breeze Customer Agent replacing Tier 1 support",
+    spend_signal: "moderate",
+    source: "fastslowmotion.com/hubspot-breeze-customer-agent",
+  },
+  "Smartsheet": {
+    layoffs_pct: 8, year: "2025-2026", departments: ["engineering", "IT"],
+    correlation: "implied", statement: "PE-driven efficiency post-privatization",
+    spend_signal: "low",
+    source: "geekwire.com/2026/smartsheet-layoffs-enterprise-software-giant-cuts-staff",
+  },
+};
+
+// Displacement multiplier: companies with explicit AI-layoff correlation spend more per seat
+// because they're replacing human functions, not just augmenting
+const DISPLACEMENT_MULTIPLIER = {
+  very_high: 1.8,  // Replacing entire functions with Claude
+  high: 1.4,       // Significant displacement
+  moderate: 1.15,  // Some displacement
+  low: 1.0,        // No displacement signal
+};
+
+function getDisplacementMultiplier(company) {
+  const signal = AI_DISPLACEMENT[company];
+  if (!signal) return { multiplier: 1.0, source: null };
+  const mult = DISPLACEMENT_MULTIPLIER[signal.spend_signal] || 1.0;
+  return {
+    multiplier: mult,
+    layoffs: signal.layoffs || signal.layoffs_pct,
+    departments: signal.departments,
+    correlation: signal.correlation,
+    quote: signal.ceo_quote || signal.statement || signal.metric,
+    source: signal.source,
+  };
+}
+
+
+// ============================================================
 // COMPANY PROFILES: What we know + what we infer
 // ============================================================
 
@@ -390,11 +484,15 @@ export function deriveCustomerMetrics(profile) {
   const inferredSeats = knownSeats || Math.round(headcount * penetration);
   const seatsSource = knownSeats ? "public disclosure" : `inferred: ${headcount} headcount × ${(penetration * 100).toFixed(1)}% penetration (${profile.onboarding_stage} stage)`;
 
+  // AI displacement signal
+  const displacement = getDisplacementMultiplier(profile.company);
+
   // Monthly token volume (MTok)
   const monthlyMTok = inferredSeats * tokensPerUser;
 
-  // Monthly spend
-  const monthlySpend = Math.round(monthlyMTok * costPerMTok);
+  // Monthly spend (base × displacement multiplier)
+  const baseMonthlySpend = Math.round(monthlyMTok * costPerMTok);
+  const monthlySpend = Math.round(baseMonthlySpend * displacement.multiplier);
 
   // Annual estimated spend
   const annualSpend = monthlySpend * 12;
@@ -438,7 +536,15 @@ export function deriveCustomerMetrics(profile) {
     seats_source: seatsSource,
     monthly_spend: monthlySpend,
     annual_spend: annualSpend,
-    spend_source: `${inferredSeats} seats × ${tokensPerUser} MTok/user/mo × $${costPerMTok.toFixed(2)}/MTok (${profile.vertical_type} model mix)`,
+    spend_source: `${inferredSeats} seats × ${tokensPerUser} MTok/user/mo × $${costPerMTok.toFixed(2)}/MTok (${profile.vertical_type} mix)${displacement.multiplier > 1 ? ` × ${displacement.multiplier}x displacement (${displacement.correlation}: "${displacement.quote}")` : ''}`,
+    displacement: displacement.multiplier > 1 ? {
+      multiplier: displacement.multiplier,
+      layoffs: displacement.layoffs,
+      departments: displacement.departments,
+      correlation: displacement.correlation,
+      quote: displacement.quote,
+      source: displacement.source,
+    } : null,
     model_mix: modelMix,
     model_mix_source: `Inferred from vertical: ${profile.vertical_type}`,
 
