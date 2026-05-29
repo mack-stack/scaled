@@ -42,65 +42,39 @@ const customersBase = allCustomers.map((c, i) => ({
 // Export customers with benchmark data for DEMO_CUSTOMERS reference
 const _tempCustomers = { customers: customersBase, total: customersBase.length };
 
-// Score all and merge health back in
-const benchmarkResults = (() => {
-  // scoreAllCustomers reads from DEMO_CUSTOMERS, but it hasn't been assigned yet.
-  // So we score directly from customersBase
-  const { scoreCustomer } = (() => {
-    // Inline the scoring to avoid circular dependency
-    const BENCH_SCORES = customersBase.map(c => {
-      // Simplified benchmark scoring for each customer
-      let total = 0, count = 0;
+// Score each customer against 10 champion benchmarks
+function scoreSingleCustomer(c) {
+  const ev = (c.evidence || '').toLowerCase();
+  const prods = (c.known_products || []).map(p => p.toLowerCase());
+  const stage = c.onboarding_stage || 'signed_up';
+  let total = 0;
 
-      // 1. Time to adoption (stage-based)
-      const adoptionDays = { signed_up: 0, api_key_created: 5, first_api_call: 15, first_workflow: 30, integrated: 60, scaling: 45, champion: 30 };
-      total += Math.max(0, 100 - (adoptionDays[c.onboarding_stage] || 90)); count++;
+  const adoptionDays = { signed_up: 0, api_key_created: 5, first_api_call: 15, first_workflow: 30, integrated: 60, scaling: 45, champion: 30 };
+  total += Math.max(0, 100 - (adoptionDays[stage] || 90));
+  total += ev.includes('cach') ? 85 : stage === 'champion' ? 55 : stage === 'scaling' ? 35 : 15;
+  total += (ev.includes('skill') || ev.includes('workflow')) ? 80 : stage === 'champion' ? 40 : 15;
+  total += prods.some(p => p.includes('code')) ? 50 : stage === 'champion' ? 35 : 10;
+  total += (ev.includes('pr') || ev.includes('650')) ? 80 : prods.some(p => p.includes('code')) ? 40 : 10;
+  total += (ev.includes('department') || ev.includes('workforce') || ev.includes('campus')) ? 75 : stage === 'champion' ? 45 : 15;
+  total += (ev.includes('resolution') || ev.includes('customer')) ? 65 : 15;
+  total += prods.some(p => p.includes('mcp') || p.includes('connector')) ? 60 : 10;
+  total += (ev.includes('governance') || ev.includes('auditor')) ? 85 : (c.seats || 0) > 1000 ? 30 : 10;
+  total += (ev.includes('roadmap') || ev.includes('10x') || ev.includes('faster')) ? 75 : stage === 'champion' ? 35 : 10;
 
-      // 2. Caching (evidence-based)
-      total += c.evidence?.toLowerCase().includes('cach') ? 85 : c.onboarding_stage === 'champion' ? 55 : c.onboarding_stage === 'scaling' ? 35 : 15; count++;
+  return Math.round(total / 10);
+}
 
-      // 3. Skills/workflows
-      total += (c.evidence?.toLowerCase().includes('skill') || c.evidence?.toLowerCase().includes('workflow')) ? 80 : c.onboarding_stage === 'champion' ? 40 : 15; count++;
-
-      // 4. Code production
-      total += (c.known_products?.some(p => p.toLowerCase().includes('code'))) ? 50 : c.onboarding_stage === 'champion' ? 35 : 10; count++;
-
-      // 5. PR velocity
-      total += (c.evidence?.toLowerCase().includes('pr') || c.evidence?.toLowerCase().includes('650')) ? 80 : c.known_products?.some(p => p.toLowerCase().includes('code')) ? 40 : 10; count++;
-
-      // 6. Cross-department
-      total += (c.evidence?.toLowerCase().includes('department') || c.evidence?.toLowerCase().includes('workforce') || c.evidence?.toLowerCase().includes('campus')) ? 75 : c.onboarding_stage === 'champion' ? 45 : 15; count++;
-
-      // 7. Customer-facing impact
-      total += (c.evidence?.toLowerCase().includes('resolution') || c.evidence?.toLowerCase().includes('customer')) ? 65 : 15; count++;
-
-      // 8. MCP/Connector
-      total += (c.known_products?.some(p => p.toLowerCase().includes('mcp') || p.toLowerCase().includes('connector'))) ? 60 : 10; count++;
-
-      // 9. Governance
-      total += (c.evidence?.toLowerCase().includes('governance') || c.evidence?.toLowerCase().includes('auditor')) ? 85 : c.seats > 1000 ? 30 : 10; count++;
-
-      // 10. Roadmap acceleration
-      total += (c.evidence?.toLowerCase().includes('roadmap') || c.evidence?.toLowerCase().includes('10x') || c.evidence?.toLowerCase().includes('faster')) ? 75 : c.onboarding_stage === 'champion' ? 35 : 10; count++;
-
-      return Math.round(total / count);
-    });
-    return { scores: BENCH_SCORES };
-  })();
-
-  const scores = scoreCustomer.scores;
-  const nonChurnScores = scores.filter((_, i) => !customersBase[i].churn);
-  const mean = nonChurnScores.reduce((a, b) => a + b, 0) / nonChurnScores.length;
-  const variance = nonChurnScores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / nonChurnScores.length;
-  const stdDev = Math.sqrt(variance);
-
-  return { scores, mean, stdDev };
-})();
+const benchmarkScores = customersBase.map(scoreSingleCustomer);
+const nonChurnScores = benchmarkScores.filter((_, i) => !customersBase[i].churn);
+const benchmarkMean = nonChurnScores.length > 0 ? nonChurnScores.reduce((a, b) => a + b, 0) / nonChurnScores.length : 50;
+const benchmarkVariance = nonChurnScores.length > 0 ? nonChurnScores.reduce((sum, s) => sum + Math.pow(s - benchmarkMean, 2), 0) / nonChurnScores.length : 100;
+const benchmarkStdDev = Math.sqrt(benchmarkVariance);
 
 // Apply health scores
 const scoredCustomers = customersBase.map((c, i) => {
-  const score = benchmarkResults.scores[i];
-  const { mean, stdDev } = benchmarkResults;
+  const score = benchmarkScores[i];
+  const mean = benchmarkMean;
+  const stdDev = benchmarkStdDev;
 
   let health_status, health_score;
   if (c.churn) {
@@ -123,7 +97,7 @@ const scoredCustomers = customersBase.map((c, i) => {
 export const DEMO_CUSTOMERS = {
   customers: scoredCustomers,
   total: scoredCustomers.length,
-  health_methodology: `Score = avg of 10 champion benchmark scores (0-100). Mean: ${Math.round(benchmarkResults.mean)}, σ: ${Math.round(benchmarkResults.stdDev)}. Healthy ≥ mean, Monitor < mean, At-Risk < mean-1σ, Critical < mean-2σ.`,
+  health_methodology: `Score = avg of 10 champion benchmark scores (0-100). Mean: ${Math.round(benchmarkMean)}, σ: ${Math.round(benchmarkStdDev)}. Healthy ≥ mean, Monitor < mean, At-Risk < mean-1σ, Critical < mean-2σ.`,
 };
 
 // --- Real incidents from status.claude.com (May 2026) ---

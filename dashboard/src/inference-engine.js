@@ -8,7 +8,7 @@
 
 export const COMPANY_DATA = {
   // Reference baselines (known deal sizes)
-  "Snowflake": { headcount: 8000, revenue: 3630000000, deal_size_yr: 65000000, deal_type: "platform_resale", source: "Snowflake press release: $200M multi-year" },
+  "Snowflake": { headcount: 7823, revenue: 3840000000, deal_size_yr: 65000000, deal_type: "platform_resale", source: "FY2025, known $200M deal" },
   "Uber": { headcount: 38474, revenue: 52000000000, engineers: 5000, spend_per_eng_mo: { low: 500, high: 2000 }, deal_type: "claude_code_heavy", source: "CTO disclosure via briefs.co" },
   "PwC": { headcount: 364000, revenue: 56900000000, claude_seats: 30000, deal_type: "consulting_rollout", source: "anthropic.com/news/pwc-expanded-partnership" },
   "Accenture": { headcount: 811000, revenue: 69700000000, claude_seats: 30000, deal_type: "consulting_rollout", source: "anthropic.com/news/anthropic-accenture-partnership" },
@@ -30,6 +30,56 @@ export const COMPANY_DATA = {
   "Satispay": { headcount: 853, revenue: 72000000, public: false, source: "Tracxn, CEO statements (EUR 60M)" },
   "Retool": { headcount: 450, revenue: 130000000, public: false, source: "Latka, Sacra" },
   "Microsoft": { headcount: 228000, revenue: 281700000000, public: true, ticker: "MSFT", source: "2025 Annual Report" },
+
+  // Financial Services
+  "JPMorgan Chase": { headcount: 317000, revenue: 280345000000, source: "2025 10-K" },
+  "Goldman Sachs": { headcount: 47400, revenue: 58280000000, source: "2025 10-K" },
+  "Citi": { headcount: 226000, revenue: 88400000000, source: "2025 10-K" },
+  "AIG": { headcount: 22100, revenue: 26775000000, source: "2025 Annual Report" },
+  "Visa": { headcount: 34100, revenue: 40000000000, source: "FY2025 10-K" },
+  "Moody's": { headcount: 16076, revenue: 7720000000, source: "2025 10-K" },
+  "Bridgewater Associates": { headcount: 1500, revenue: 622000000, source: "ZoomInfo/Owler" },
+  "Commonwealth Bank of Australia": { headcount: 52000, revenue: 44929000000, source: "2025 annual report" },
+  "Norges Bank Investment Management": { headcount: 786, revenue: null, source: "2025 annual report, sovereign fund" },
+  // Legal
+  "Freshfields": { headcount: 6979, revenue: 2350000000, source: "Wikipedia/Wiza" },
+  "Quinn Emanuel": { headcount: 1200, revenue: 2100000000, source: "Bloomberg Law" },
+  "Holland & Knight": { headcount: 2172, revenue: 2000000000, source: "2025 press release" },
+  "Thomson Reuters": { headcount: 26400, revenue: 7476000000, source: "2025 annual report" },
+  "Harvey": { headcount: 350, revenue: 190000000, source: "$190M ARR Jan 2026" },
+  "Everlaw": { headcount: 500, revenue: 80800000, source: "Getlatka 2024" },
+  "Crosby Legal": { headcount: 19, revenue: null, source: "Sequoia-backed, $60M Series B" },
+  // Healthcare
+  "Banner Health": { headcount: 55000, revenue: 16000000000, source: "2025 annual report" },
+  "Sanofi": { headcount: 100000, revenue: 43626000000, source: "2025 full year" },
+  "Pfizer": { headcount: 75000, revenue: 62000000000, source: "2025 10-K" },
+  "Commure": { headcount: 1532, revenue: null, source: "Tracxn Feb 2026" },
+  "Schrodinger": { headcount: 974, revenue: 255000000, source: "Dec 2025 10-K" },
+  "AstraZeneca": { headcount: 94300, revenue: 58739000000, source: "2025 20-F" },
+  // Tech/SaaS
+  "Spotify": { headcount: 7287, revenue: 17500000000, source: "2025 avg employees" },
+  "Netflix": { headcount: 16000, revenue: 45100000000, source: "2025 10-K" },
+  "Lyft": { headcount: 3913, revenue: 6320000000, source: "2025 10-K" },
+  "DoorDash": { headcount: 26000, revenue: 13717000000, source: "2025 10-K" },
+  "Asana": { headcount: 2229, revenue: 724000000, source: "FY2025" },
+  "Rakuten": { headcount: 31488, revenue: 16727000000, source: "2025 annual" },
+  "Honeycomb": { headcount: 300, revenue: null, source: "Private, ~300 employees" },
+  "Elastic": { headcount: 3401, revenue: 1483000000, source: "FY2025" },
+  // Consulting/SI
+  "Deloitte": { headcount: 470000, revenue: 70500000000, source: "FY2025" },
+  "KPMG": { headcount: 276030, revenue: 39800000000, source: "FY2025" },
+  "Cognizant": { headcount: 350000, revenue: 21000000000, source: "2025 guidance" },
+  "Infosys": { headcount: 323578, revenue: 19500000000, source: "FY25" },
+  "Slalom": { headcount: 12000, revenue: 3000000000, source: "Private estimates" },
+  "Fujitsu": { headcount: 124000, revenue: 23431000000, source: "FY2025" },
+  // Education
+  "Northeastern University": { headcount: 50000, revenue: null, source: "50K students+faculty+staff" },
+  "University of Pittsburgh": { headcount: 14731, revenue: null, source: "34,525 students, 14,731 employees" },
+  "London School of Economics": { headcount: 4000, revenue: null, source: "Est. 3-5K staff" },
+  "Dartmouth": { headcount: 7000, revenue: null, source: "6,938 students + 700+ faculty" },
+  // Platform
+  "Databricks": { headcount: 12000, revenue: 3700000000, source: "~$3.7B ARR mid-2025" },
+  "ServiceNow": { headcount: 29187, revenue: 12000000000, source: "2025 10-K" },
 };
 
 
@@ -66,6 +116,9 @@ const MODEL_MIX = {
   education:        { opus: 0.05, sonnet: 0.60, haiku: 0.35 }, // Syracuse — teaching + research
   nonprofit:        { opus: 0.05, sonnet: 0.65, haiku: 0.30 }, // YMCA SA — content + ops
   enterprise_competitive: { opus: 0.40, sonnet: 0.40, haiku: 0.20 }, // Microsoft, Retool — was heavy, now leaving
+  finserv: { opus: 0.40, sonnet: 0.40, haiku: 0.20 },
+  healthcare: { opus: 0.25, sonnet: 0.50, haiku: 0.25 },
+  platform_partner: { opus: 0.20, sonnet: 0.50, haiku: 0.30 },
 };
 
 // Weighted average cost per MTok for each mix
@@ -110,6 +163,13 @@ const KNOWN_SEATS = {
   "Microsoft": 2000,      // Estimated from "Experiences & Devices division" — partial org
   "YMCA South Australia": 15, // Small team, ~1,250 total staff but few tech users
   "Syracuse University": 500, // Campus-wide but active users are a fraction
+  "Deloitte": 470000,
+  "KPMG": 276000,
+  "Cognizant": 350000,
+  "Banner Health": 55000,
+  "Fujitsu": 100000,
+  "Northeastern University": 50000,
+  "Sanofi": 100000,
 };
 
 // Average monthly token consumption per active user (MTok/user/month)
@@ -127,6 +187,9 @@ const TOKENS_PER_USER_MONTH = {
   education: 8,
   nonprofit: 12,
   enterprise_competitive: 60,
+  finserv: 45,
+  healthcare: 35,
+  platform_partner: 50,
 };
 
 
@@ -197,6 +260,18 @@ const AI_DISPLACEMENT = {
     correlation: "implied", statement: "PE-driven efficiency post-privatization",
     spend_signal: "low",
     source: "geekwire.com/2026/smartsheet-layoffs-enterprise-software-giant-cuts-staff",
+  },
+  "Deloitte": {
+    layoffs: null, year: "2025", departments: ["consulting"],
+    correlation: "implied", statement: "470K employees get Claude — largest deployment ever",
+    spend_signal: "very_high",
+    source: "anthropic.com/news/deloitte-anthropic-partnership",
+  },
+  "Cognizant": {
+    layoffs: 3500, year: "2024-2025", departments: ["delivery", "support"],
+    correlation: "strong", statement: "350K associates get Claude access",
+    spend_signal: "high",
+    source: "news.cognizant.com",
   },
 };
 
