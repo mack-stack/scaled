@@ -88,9 +88,9 @@ export const createIncident = (data) => postJSON('/api/incidents/', data);
 export const resolveIncident = (id) => putJSON(`/api/incidents/${id}/resolve`);
 export const assessIncident = (id) => postJSON(`/api/incidents/${id}/assess`, {}, DEMO_INCIDENT_DETAIL);
 export const generateIncidentComms = (id) => postJSON(`/api/incidents/${id}/comms`, {}, { communications: [
-  { tier: "critical_impact", customer_name: "StreamScale AI", subject: "Action Required: Context Caching Issue Impact on Your Claude Code Workflows", body: "Hi Sarah,\n\nI'm reaching out because our monitoring identified that StreamScale AI was directly impacted by the context caching issue we disclosed on March 26th.\n\nBased on your usage patterns, approximately 69% of your API spend flows through Claude Code, which was one of the most affected services. You may have experienced degraded context retention in longer coding sessions during this period.\n\nWhat happened: An optimization we deployed cleared reasoning context on every conversation turn instead of once per session. This meant Claude was effectively losing its chain of thought mid-conversation.\n\nWhat we did: The fix was deployed on April 10th. All sessions now correctly preserve context throughout.\n\nWhat you should do:\n- Review any code generated between March 26 - April 10 for quality\n- If you noticed increased error rates during that window, they should now be resolved\n- We've credited your account for the affected period\n\nI'd welcome the opportunity to walk through your specific impact in more detail. Would you have 30 minutes this week?\n\nBest,\nScaled CS Team" },
-  { tier: "high_impact", customer_name: "DataPipe Labs", subject: "Update: Context Caching Issue — Your Account Impact", body: "Hi Marcus,\n\nI wanted to follow up regarding the context caching issue that affected Claude API and Claude Code between March 26 - April 10.\n\nDataPipe Labs uses both the Messages API and Claude Code, both of which were impacted. You may have noticed reduced quality in multi-turn conversations during this window.\n\nThe issue has been fully resolved. If you'd like a detailed breakdown of how your specific usage was affected, please don't hesitate to reach out.\n\nBest,\nScaled CS Team" },
-  { tier: "moderate_impact", customer_name: "Pacific Coast Mfg", subject: "FYI: Recent Claude Service Issue — Minimal Impact to Your Account", body: "Hi Rachel,\n\nA brief update: between March 26 - April 10, we identified and resolved a context caching issue affecting some Claude API users. Based on your usage patterns, your account experienced minimal impact.\n\nNo action is needed on your end. Full details are available on our status page.\n\nBest,\nScaled CS Team" },
+  { tier: "critical_impact", customer_name: "PwC", subject: "Action Required: Multi-Model Error Rates — Impact on Your Claude Deployment", body: "Hi PwC Partner Team,\n\nI'm reaching out because our monitoring identified that PwC's deployment was directly impacted by the elevated error rates across Opus 4.7, Sonnet 4.6, and Haiku 4.5 on May 22nd.\n\nWith 30,000 active seats across your global practice, your team experienced approximately 4.5 hours of degraded API performance. Based on your usage patterns, Opus 4.7 accounts for the majority of your workloads, which was the most affected model.\n\nWhat happened: Multiple models experienced elevated error rates simultaneously, beginning at 04:16 UTC.\n\nWhat we did: Full resolution was achieved by 08:50 UTC. Root cause analysis is underway.\n\nWhat you should do:\n- Review any batch jobs submitted between 04:00-09:00 UTC May 22 for completion\n- If your teams experienced failed requests, they can be safely retried\n- We're providing a detailed impact report for your account within 48 hours\n\nI'd like to schedule a call with your AI Practice leadership to walk through the impact and our reliability improvements. Would Thursday work?\n\nBest,\nScaled CS Team" },
+  { tier: "high_impact", customer_name: "HubSpot", subject: "Update: May 22 Multi-Model Incident — Your Account Impact", body: "Hi HubSpot Product Team,\n\nFollowing up on the multi-model error rate incident on May 22 (04:16-08:50 UTC).\n\nHubSpot's Claude integration was impacted during this window. Your usage spans Sonnet 4.6 and Opus 4.7 — both affected models. We estimate approximately 12% of your API requests during this period received errors.\n\nThe issue has been fully resolved. All models are operating normally. If you'd like a detailed breakdown of your specific account impact, we're happy to provide one.\n\nBest,\nScaled CS Team" },
+  { tier: "moderate_impact", customer_name: "Jamf", subject: "FYI: Recent Claude Service Incident — Minimal Impact to Your Account", body: "Hi Jamf Team,\n\nA brief update: on May 22, we identified and resolved elevated error rates affecting multiple Claude models (4h 34m total duration). Based on your usage patterns, your account experienced minimal impact.\n\nNo action is needed on your end. Full details are available at status.claude.com.\n\nBest,\nScaled CS Team" },
 ]});
 export const getIncidentComms = (id) => fetchJSON(`/api/incidents/${id}/comms`, { communications: [] });
 
@@ -113,19 +113,31 @@ export const runOnboardingScan = () => postJSON('/api/onboarding/scan', {}, { sc
 export const getPortfolio = () => fetchJSON('/api/telemetry/portfolio', DEMO_PORTFOLIO);
 export const getPortfolioReport = () => fetchJSON('/api/telemetry/portfolio/report', {
   narrative: `WEEKLY PORTFOLIO REPORT — Scaled CS Platform\n\n` +
-    `EXECUTIVE SUMMARY\nThe portfolio of 16 accounts ($12.6M ARR) shows mixed health signals this week. ` +
-    `8 accounts are healthy, 4 need monitoring, 3 are at risk, and 1 is critical. Revenue at risk: $903K (7.2% of portfolio ARR).\n\n` +
+    `EXECUTIVE SUMMARY\nThe portfolio of 16 accounts ($42.9M ARR) shows mixed health signals this week. ` +
+    `7 accounts are healthy, 4 need monitoring, 3 are at risk, and 1 is critical. Revenue at risk: $1.18M (2.7% of portfolio ARR). ` +
+    `The Industries segment is the primary concern — all 4 accounts score below 65.\n\n` +
     `KEY RISKS\n` +
-    `• BuildRight Contractors (critical, score: 10) — Zero usage since signup 22 days ago. $2.4K ARR at immediate churn risk. Recommend reactivation play with SMB onboarding content.\n` +
-    `• ContentForge (critical, score: 15) — Stalled at first_api_call for 18 days. This self-serve Pro user likely hit a friction point. Trigger onboarding nudge with API quickstart guide.\n` +
-    `• LegalEdge AI (at-risk, score: 38) — Enterprise account ($336K ARR) stuck at first_workflow for 31 days. Compliance review may be blocking adoption. Offer a Center of Excellence consultation.\n\n` +
+    `• YMCA South Australia (critical, score: 12) — Zero meaningful usage 28 days post-signup. Small business team account at immediate churn risk. Trigger reactivation with SMB-specific onboarding content (reference the 15 agentic workflows launched May 13).\n` +
+    `• Syracuse University (at-risk, score: 35) — Higher Ed enterprise account ($300K ARR) stalled at first_workflow for 19 days. Academic procurement cycles may be slowing adoption. Offer a dedicated Higher Ed onboarding cohort.\n` +
+    `• Smartsheet (at-risk, score: 38) — Enterprise ($270K ARR) stalled at first_workflow for 22 days. Their product integration likely needs technical enablement support.\n` +
+    `• Jamf (at-risk, score: 42) — Enterprise ($360K ARR) integrated but health declining. Usage patterns suggest they hit a capability ceiling — recommend expansion use case workshop.\n\n` +
     `KEY WINS\n` +
-    `• StreamScale AI — 103% month-over-month spend growth. Expansion signal detected. This $1M ARR account is accelerating — route to sales for upsell conversation.\n` +
-    `• Veridia Health — Champion status, score 94. $1.8M ARR account fully activated. Candidate for customer reference program and case study.\n\n` +
+    `• Notion — Champion status, score 94. $2.1M ARR, fully activated across 350 seats. Building "a workspace for teams and agents." Prime candidate for reference program and case study.\n` +
+    `• Accenture — Champion status, score 88. $18M ARR, 30,000 professionals trained. The Claude Partner Network anchor. Expansion into additional practice areas is the play.\n` +
+    `• OpusClip — Champion in self-serve, score 87. Scaling API usage efficiently. Proof that the self-serve → champion path works without CSM touch.\n\n` +
+    `INCIDENT IMPACT\n` +
+    `May 22 multi-model outage (4h 34m) impacted 14 of 16 accounts. PwC and Accenture were in the critical tier due to their scale. ` +
+    `Opus 4.7 continues to show the highest incident frequency (12 incidents in 18 days) — likely correlated with it being the highest-traffic model. ` +
+    `Recommend proactive reliability comms to strategic accounts before the next occurrence.\n\n` +
+    `COMMUNITY INTELLIGENCE\n` +
+    `GitHub signal analysis shows quota/cost issues dominate community complaints (1,472 comments on #16157 alone). ` +
+    `Issue #38335 (740 comments) about Max plan quota drain aligns with our token health module findings. ` +
+    `Recommend a "Token Economics 101" webinar series targeting monitor-tier accounts — addresses the #1 community pain point proactively.\n\n` +
     `FOCUS AREAS THIS WEEK\n` +
-    `1. Execute the 5 pending plays (2 onboarding nudges, 1 reactivation, 1 expansion signal, 1 token optimization)\n` +
-    `2. Industries segment (avg score: 46.7) is the weakest — Pacific Coast Mfg and LegalEdge both stalled. Consider an industry-specific onboarding cohort.\n` +
-    `3. Overall cache hit rates are low (avg 34%). A "Token Economics 101" webinar targeting the monitor-tier accounts could lift scores and prevent at-risk transitions.\n\n` +
+    `1. Execute the 5 pending plays (1 token optimization for Slack, 1 reactivation for YMCA SA, 2 onboarding nudges for Smartsheet/Syracuse, 1 expansion signal for Notion)\n` +
+    `2. Industries segment (avg score: 44.3) is the weakest — Jamf, Smartsheet, Pendo, and Syracuse all need attention. Consider an industry-specific onboarding cohort.\n` +
+    `3. Prepare proactive reliability communication template for the next Opus 4.7 incident — pattern suggests it's a matter of when, not if.\n\n` +
+    `Sources: status.claude.com, github.com/anthropics/claude-code, internal telemetry (simulated)\n` +
     `Generated by Claude | Scaled CS Platform`,
 });
 export const getCustomerSignals = (id) => fetchJSON(`/api/telemetry/${id}/signals`, {});

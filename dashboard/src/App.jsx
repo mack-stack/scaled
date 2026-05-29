@@ -62,8 +62,8 @@ function App() {
 
       <main className="main">
         <div className="demo-banner">
-          Demo Mode — Simulated customer data. Real Anthropic pricing, incidents, and product structure.
-          <span>Add an ANTHROPIC_API_KEY to enable Claude-generated analysis.</span>
+          Real companies, pricing, incidents, and GitHub issues. Usage data is simulated.
+          <span>Sources: claude.com/customers, status.claude.com, github.com/anthropics/claude-code, docs.anthropic.com/pricing</span>
         </div>
         <Page
           selectedCustomer={selectedCustomer}
