@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getIncidents, getIncident, assessIncident, generateIncidentComms, getIncidentComms } from '../api';
+import { getIncidents, getIncident, generateIncidentComms } from '../api';
+import { DEMO_CUSTOMERS } from '../demo-data';
 
 export default function Incidents() {
   const [incidents, setIncidents] = useState([]);
@@ -7,7 +8,6 @@ export default function Incidents() {
   const [detail, setDetail] = useState(null);
   const [comms, setComms] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [assessing, setAssessing] = useState(false);
   const [generatingComms, setGeneratingComms] = useState(false);
 
   useEffect(() => {
@@ -25,18 +25,6 @@ export default function Incidents() {
       console.log('getIncident result:', res);
       setDetail(res);
     }).catch((err) => console.error('getIncident error:', err));
-  };
-
-  const assess = (id) => {
-    console.log('assessIncident:', id);
-    setAssessing(true);
-    assessIncident(id).then((res) => {
-      console.log('assessIncident result keys:', Object.keys(res || {}));
-      console.log('has impact:', !!res?.impact);
-      console.log('tiers:', Object.keys(res?.impact?.tiers || {}));
-      // Force new object reference so React re-renders
-      setDetail({ ...res, _ts: Date.now() });
-    }).catch((err) => console.error('assessIncident error:', err)).finally(() => setAssessing(false));
   };
 
   const genComms = (id) => {
@@ -111,52 +99,43 @@ export default function Incidents() {
             </a>
           )}
 
-          <div className="flex gap-2 mb-4" style={{ marginTop: '12px' }}>
-            <button className="btn btn-primary" onClick={() => assess(selected)} disabled={assessing}>
-              {assessing ? 'Assessing...' : 'Assess Impact'}
-            </button>
+          <div style={{ marginTop: '12px', marginBottom: '16px' }}>
             <button className="btn btn-primary" onClick={() => genComms(selected)} disabled={generatingComms}>
               {generatingComms ? 'Generating...' : 'Generate Comms'}
             </button>
           </div>
 
-          {impact ? (
-            <>
-              <div className="card-grid mb-4">
-                <div className="card">
-                  <div className="card-label">Total Customers</div>
-                  <div className="card-value">{impact.total_customers}</div>
-                </div>
-                <div className="card">
-                  <div className="card-label">Impacted</div>
-                  <div className="card-value text-orange">{impact.impacted_customers}</div>
-                </div>
-              </div>
+          <div className="card-grid mb-4">
+            <div className="card">
+              <div className="card-label">Total Customers</div>
+              <div className="card-value">{impact?.total_customers || DEMO_CUSTOMERS?.total || '—'}</div>
+            </div>
+            <div className="card">
+              <div className="card-label">Impacted</div>
+              <div className="card-value text-orange">{impact?.impacted_customers || '—'}</div>
+            </div>
+          </div>
 
-              {tiers && Object.entries(tiers).map(([tier, data]) => {
-                const customers = Array.isArray(data) ? data : [];
-                if (customers.length === 0) return null;
-                return (
-                  <div key={tier} style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: tier.includes('critical') ? 'var(--red)' : tier.includes('high') ? 'var(--orange)' : tier.includes('moderate') ? 'var(--yellow)' : 'var(--text-muted)', marginBottom: '4px' }}>
-                      {tier.replace(/_/g, ' ')} ({customers.length})
-                    </div>
-                    {customers.map((c, i) => (
-                      <div key={i} className="detail-row">
-                        <span>{c.company || ''}</span>
-                        <span className="text-muted" style={{ display: 'flex', gap: '12px' }}>
-                          {c.arr ? <span>${(c.arr / 1000000).toFixed(1)}M</span> : null}
-                          {c.impact_score != null ? <span>Score: {c.impact_score}</span> : null}
-                        </span>
-                      </div>
-                    ))}
+          {tiers ? Object.entries(tiers).map(([tier, data]) => {
+            const customers = Array.isArray(data) ? data : [];
+            if (customers.length === 0) return null;
+            return (
+              <div key={tier} style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: tier.includes('critical') ? 'var(--red)' : tier.includes('high') ? 'var(--orange)' : tier.includes('moderate') ? 'var(--yellow)' : 'var(--text-muted)', marginBottom: '4px' }}>
+                  {tier.replace(/_/g, ' ')} ({customers.length})
+                </div>
+                {customers.map((c, i) => (
+                  <div key={i} className="detail-row">
+                    <span>{c.company || ''}</span>
+                    <span className="text-muted" style={{ display: 'flex', gap: '12px' }}>
+                      {c.arr ? <span>${(c.arr / 1000000).toFixed(1)}M</span> : null}
+                      {c.impact_score != null ? <span>Score: {c.impact_score}</span> : null}
+                    </span>
                   </div>
-                );
-              })}
-            </>
-          ) : (
-            <p className="text-muted" style={{ fontSize: '13px' }}>Click "Assess Impact" to compute customer impact from model mix overlap.</p>
-          )}
+                ))}
+              </div>
+            );
+          }) : <p className="text-muted">Loading impact assessment...</p>}
 
           {comms && (
             <div className="mt-4">
