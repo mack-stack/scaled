@@ -17,13 +17,45 @@ export default function TokenHealth() {
     setScanning(true);
     runTokenHealthScan().then((res) => {
       setSummary(res);
-      setScanning(false);
-    }).catch(() => setScanning(false));
+      // Re-fetch summary to pick up any updated data
+      getTokenHealthSummary().then(setSummary).catch(console.error);
+    }).catch(() => {}).finally(() => setScanning(false));
   };
 
   const analyzeCustomer = (id) => {
     setAnalyzing(id);
-    getTokenHealth(id).then(setDetail).catch(console.error).finally(() => setAnalyzing(null));
+    getTokenHealth(id).then((res) => {
+      console.log('Token health result:', res);
+      setDetail(res);
+    }).catch((err) => {
+      console.error('Token health error:', err);
+      // Build fallback inline if API call fails
+      const c = summary?.customers?.find(c => c.id === id);
+      if (c) {
+        setDetail({
+          customer_id: c.id,
+          company: c.company,
+          score: c.health_score,
+          status: c.health_status,
+          signals: {
+            spend_30d: c.spend_30d || 0,
+            monthly_commitment: c.monthly_commitment || 0,
+            burn_rate: c.burn_rate || null,
+            model_mix_opus: c.model_mix?.opus_pct + '%' || 'unknown',
+            model_mix_sonnet: c.model_mix?.sonnet_pct + '%' || 'unknown',
+            model_mix_haiku: c.model_mix?.haiku_pct + '%' || 'unknown',
+            seats: c.seats || 0,
+          },
+          recommendations: [
+            'Connect an ANTHROPIC_API_KEY for Claude-generated deep analysis.',
+            c.model_mix?.opus_pct > 40 ? `${c.model_mix.opus_pct}% Opus usage. Consider Sonnet/Haiku for routine tasks to reduce costs 60-80%.` : null,
+            'Review champion benchmarks — top performers like Notion achieve 90% cost reduction via prompt caching.',
+          ].filter(Boolean),
+          analysis: c.evidence || 'Connect backend for full analysis.',
+          analysis_source: 'inline_fallback',
+        });
+      }
+    }).finally(() => setAnalyzing(null));
   };
 
   if (loading) return <div className="loading"><div className="spinner" />Loading token health...</div>;
@@ -110,10 +142,10 @@ export default function TokenHealth() {
           {detail.signals && (
             <div className="mt-4">
               <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>Signals</h4>
-              {Object.entries(detail.signals).map(([k, v]) => (
+              {Object.entries(detail.signals).filter(([k, v]) => v != null && typeof v !== 'object').map(([k, v]) => (
                 <div className="detail-row" key={k}>
                   <span className="detail-label">{k.replace(/_/g, ' ')}</span>
-                  <span>{typeof v === 'number' ? v.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(v)}</span>
+                  <span>{typeof v === 'number' ? (v > 1000 ? '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : v.toLocaleString(undefined, { maximumFractionDigits: 2 })) : String(v)}</span>
                 </div>
               ))}
             </div>
