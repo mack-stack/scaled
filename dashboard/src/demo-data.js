@@ -211,34 +211,73 @@ export const DEMO_ONBOARDING_FUNNEL = {
   customers: DEMO_CUSTOMERS.customers,
 };
 
-// --- Plays queue (derived from real signals) ---
-export const DEMO_PLAYS = {
-  plays: [
-    ...DEMO_CUSTOMERS.customers.filter(c => c.churn).map((c, i) => ({
-      id: i + 1, customer_id: c.id, play_type: "churn_recovery", status: "pending",
+// --- Plays queue (derived from real signals + benchmark gaps) ---
+function generatePlays() {
+  const plays = [];
+  let id = 1;
+  const customers = DEMO_CUSTOMERS.customers;
+
+  // 1. Churn recovery — highest priority
+  customers.filter(c => c.churn).forEach(c => {
+    plays.push({
+      id: id++, customer_id: c.id, play_type: "churn_recovery", status: "pending",
       trigger_signal: { reason: c.churn_reason },
+      playbook: `Immediate executive outreach. Acknowledge the issue (${c.churn_reason?.substring(0, 60)}). Offer dedicated reliability SLA or architectural review. Reference improvements since their departure.`,
       created_at: new Date().toISOString(), company: c.company,
       health_status: "critical", health_score: 5, arr: c.arr,
-    })),
-    ...DEMO_CUSTOMERS.customers.filter(c => c.at_risk && !c.churn).map((c, i) => ({
-      id: 100 + i, customer_id: c.id, play_type: "burn_rate_alert", status: "pending",
+    });
+  });
+
+  // 2. At-risk intervention
+  customers.filter(c => c.at_risk && !c.churn).forEach(c => {
+    plays.push({
+      id: id++, customer_id: c.id, play_type: "burn_rate_alert", status: "pending",
       trigger_signal: { reason: c.risk_reason },
+      playbook: `Token economics review session. Audit model mix — switch Opus to Sonnet/Haiku for routine tasks. Implement prompt caching (Notion saved 90%). Move batch-eligible workloads to Batch API (50% savings).`,
       created_at: new Date().toISOString(), company: c.company,
       health_status: "at_risk", health_score: 30, arr: c.arr,
-    })),
-    ...DEMO_CUSTOMERS.customers.filter(c => c.onboarding_stage === 'first_workflow').map((c, i) => ({
-      id: 200 + i, customer_id: c.id, play_type: "onboarding_nudge", status: "pending",
-      trigger_signal: { reason: `${c.company} at first_workflow stage — connector present but no deep integration signals` },
+    });
+  });
+
+  // 3. Stalled onboarding — benchmark-driven
+  customers.filter(c => !c.churn && !c.at_risk && (c.onboarding_stage === 'first_workflow' || c.onboarding_stage === 'integrated')).forEach(c => {
+    const prods = (c.known_products || []).map(p => p.toLowerCase());
+    const missingCode = !prods.some(p => p.includes('code'));
+    const missingMCP = !prods.some(p => p.includes('mcp') || p.includes('connector'));
+    const gap = missingCode ? 'Claude Code' : missingMCP ? 'MCP connector' : 'cross-department expansion';
+    plays.push({
+      id: id++, customer_id: c.id, play_type: "onboarding_nudge", status: "pending",
+      trigger_signal: { reason: `${c.company} at ${c.onboarding_stage.replace(/_/g, ' ')} — missing ${gap}. Gap vs champion benchmark.` },
+      playbook: missingCode
+        ? `Deploy Claude Code to engineering team. Benchmark: Satispay hit 75% code via Claude in 30 days. Playbook: IT-managed install, not opt-in.`
+        : missingMCP
+        ? `Launch MCP connector integration. Benchmark: Smartsheet saw 1.74M actions in week 1. Playbook: Enable bidirectional read+write.`
+        : `Expand to non-engineering departments. Benchmark: Jamf deployed to all 16 departments — non-eng teams drove broadest adoption.`,
       created_at: new Date().toISOString(), company: c.company,
-      health_status: "monitor", health_score: 55, arr: c.arr,
-    })),
-    ...DEMO_CUSTOMERS.customers.filter(c => c.onboarding_stage === 'champion' && !c.churn).slice(0, 2).map((c, i) => ({
-      id: 300 + i, customer_id: c.id, play_type: "expansion_signal", status: "pending",
-      trigger_signal: { reason: `Champion account — candidate for case study, reference program, or expansion to additional teams` },
+      health_status: c.health_status, health_score: c.health_score, arr: c.arr,
+    });
+  });
+
+  // 4. Champion expansion — top 5 by ARR
+  customers.filter(c => c.onboarding_stage === 'champion' && !c.churn).sort((a, b) => b.arr - a.arr).slice(0, 5).forEach(c => {
+    plays.push({
+      id: id++, customer_id: c.id, play_type: "expansion_signal", status: "pending",
+      trigger_signal: { reason: `Champion at ${c.percentile_label || 'top percentile'}. ${c.evidence?.substring(0, 80)}...` },
+      playbook: `Reference program candidate. Actions: (1) Propose case study or conference co-presentation. (2) Invite to customer advisory board. (3) Explore expansion to additional teams/regions. (4) Peer mentoring in onboarding cohorts for similar-vertical customers.`,
       created_at: new Date().toISOString(), company: c.company,
-      health_status: "healthy", health_score: 90, arr: c.arr,
-    })),
-  ],
+      health_status: "healthy", health_score: c.health_score, arr: c.arr,
+    });
+  });
+
+  // Sort: critical first, then at_risk, then by ARR
+  const priority = { critical: 0, at_risk: 1, monitor: 2, healthy: 3 };
+  plays.sort((a, b) => (priority[a.health_status] ?? 9) - (priority[b.health_status] ?? 9) || b.arr - a.arr);
+
+  return plays;
+}
+
+export const DEMO_PLAYS = {
+  plays: generatePlays(),
 };
 
 export const DEMO_PLAY_HISTORY = { plays: [] };

@@ -193,7 +193,40 @@ export const generateIncidentComms = (id) => {
 export const getIncidentComms = (id) => fetchJSON(`/api/incidents/${id}/comms`, { communications: [] });
 
 // ── Onboarding ──
-export const getOnboardingFunnel = () => fetchJSON('/api/onboarding/funnel', DEMO_ONBOARDING_FUNNEL);
+
+// Champion product adoption checklist — what top performers use
+const CHAMPION_PRODUCTS = ['Claude Code', 'Cowork', 'MCP', 'Managed Agents', 'Prompt Caching', 'Batch API', 'Agent SDK'];
+
+// Infer stalls: companies below 'scaling' stage that were announced 3+ months ago
+function inferStalls(customers) {
+  const stalls = [];
+  const stageRank = { signed_up: 0, api_key_created: 1, first_api_call: 2, first_workflow: 3, integrated: 4, scaling: 5, champion: 6 };
+  customers.forEach(c => {
+    if (c.churn) return;
+    const rank = stageRank[c.onboarding_stage] || 0;
+    // Companies at integrated or below with evidence suggesting they've been around for months
+    if (rank <= 4 && c.evidence) {
+      // Look for date signals in evidence
+      const has2025 = c.evidence.includes('2025');
+      const hasEarly2026 = c.evidence.includes('Jan 2026') || c.evidence.includes('Feb 2026') || c.evidence.includes('Mar 2026');
+      const monthsOld = has2025 ? 6 : hasEarly2026 ? 3 : 0;
+      if (monthsOld >= 3) {
+        stalls.push({
+          id: c.id, company: c.company, stage: c.onboarding_stage,
+          days_at_stage: monthsOld * 30, plan_tier: c.plan_tier,
+          reason: `Announced ${has2025 ? '2025' : 'early 2026'} but still at ${c.onboarding_stage} stage`,
+        });
+      }
+    }
+  });
+  return stalls;
+}
+
+export const getOnboardingFunnel = () => {
+  const stalls = inferStalls(DEMO_CUSTOMERS.customers);
+  const funnel = { ...DEMO_ONBOARDING_FUNNEL, stalls };
+  return fetchJSON('/api/onboarding/funnel', funnel);
+};
 
 export const getOnboardingStatus = (id) => {
   const c = DEMO_CUSTOMERS.customers.find(c => c.id === id);
@@ -205,26 +238,70 @@ export const getOnboardingStatus = (id) => {
 
 export const getOnboardingNextSteps = (id) => {
   const c = DEMO_CUSTOMERS.customers.find(c => c.id === id);
-  const stage = c?.onboarding_stage || 'signed_up';
-  const products = c?.known_products || [];
-  const usesCode = products.some(p => p.toLowerCase().includes('code'));
-  const usesMCP = products.some(p => p.toLowerCase().includes('mcp') || p.toLowerCase().includes('connector'));
+  if (!c) return fetchJSON(`/api/onboarding/${id}/next-steps`, {});
+
+  const stage = c.onboarding_stage || 'signed_up';
+  const products = (c.known_products || []).map(p => p.toLowerCase());
+  const evidence = (c.evidence || '').toLowerCase();
+
+  // What this company uses vs what champions use
+  const usesCode = products.some(p => p.includes('code'));
+  const usesCowork = products.some(p => p.includes('cowork'));
+  const usesMCP = products.some(p => p.includes('mcp') || p.includes('connector'));
+  const usesAgents = products.some(p => p.includes('agent'));
+  const usesCaching = evidence.includes('cach');
+  const usesBatch = products.some(p => p.includes('batch'));
 
   const steps = [];
-  if (!usesCode) steps.push("Claude Code adoption: Top performers like Satispay produce 75% of code via Claude. Install Claude Code on every developer machine — IT-managed, not opt-in.");
-  if (!usesMCP) steps.push("MCP connector integration: Smartsheet saw 1.74M actions in week 1 of their MCP connector. Connect your existing tools to Claude for immediate workflow value.");
-  steps.push("Prompt caching: Notion achieved 90% cost reduction via caching. Implement on all repeated system prompts.");
-  if (stage !== 'champion') steps.push("Skill library: Brainlabs authored 400 reusable skills in 4 weeks across 1,000 employees. Start with the '3x rule' — if you do a task 3+ times, make it a Skill.");
+
+  // Stage-specific recommendations
+  if (stage === 'first_workflow' || stage === 'integrated') {
+    steps.push(`${c.company} is at the ${stage.replace(/_/g, ' ')} stage. The gap to 'scaling' requires expanding beyond the initial use case to multiple teams or workflows. Jamf expanded from one department to all 16 — non-engineering teams drove the broadest adoption.`);
+  }
+
+  // Product gap analysis — what they DON'T use that champions DO
+  if (!usesCode && c.segment !== 'small_business') {
+    steps.push(`Claude Code gap: ${c.company} has no public Claude Code adoption. Satispay achieved 75% of code via Claude by installing it on every engineer's laptop from day one — IT-managed, not opt-in. 90% adoption in 30 days.`);
+  }
+  if (!usesMCP) {
+    steps.push(`MCP/Connector gap: No MCP integration detected for ${c.company}. Smartsheet saw 4,000 users and 1.74M actions in week 1 of their connector going GA. Connect ${c.company}'s existing tools to Claude for workflow integration.`);
+  }
+  if (!usesCaching) {
+    steps.push(`Prompt caching gap: No caching signals for ${c.company}. Notion achieved 90% cost reduction and 85% latency reduction via prompt caching. This is the single highest-ROI optimization for any API user.`);
+  }
+  if (!usesCowork && c.seats > 50) {
+    steps.push(`Cowork gap: With ${c.seats.toLocaleString()} estimated seats, ${c.company} could benefit from Claude Cowork for non-engineering teams. Brainlabs rolled out to 1,000 employees in 4 weeks with 400 skills authored.`);
+  }
+  if (!usesAgents && stage === 'scaling') {
+    steps.push(`Managed Agents gap: ${c.company} is at scaling stage but no agent adoption detected. Notion and Rakuten use Managed Agents for automated task execution. Rakuten compressed feature delivery from 24 days to 5 days.`);
+  }
+
+  // If champion, suggest expansion/reference
+  if (stage === 'champion') {
+    steps.push(`${c.company} is at champion stage — consider for customer reference program, case study expansion, and peer mentoring in onboarding cohorts.`);
+    if (!evidence.includes('governance') && c.seats > 100) {
+      steps.push(`Governance gap: At ${c.seats.toLocaleString()} seats, ${c.company} should implement a skill governance model. Brainlabs uses designated skill owners + a Claude-powered 'skills auditor' that reviews for duplication and token waste.`);
+    }
+  }
+
+  // Always add at least one step
+  if (steps.length === 0) {
+    steps.push(`Review champion benchmarks to identify specific adoption gaps for ${c.company}. Top performers score 45+ across 10 benchmarks.`);
+  }
 
   return fetchJSON(`/api/onboarding/${id}/next-steps`, {
-    stage, company: c?.company,
+    stage,
+    company: c.company,
     next_steps: steps,
-    analysis: `${c?.company || 'This account'} is at the ${stage} stage. ${c?.evidence || ''} Next steps derived from champion benchmark patterns.`,
+    analysis: `${c.company} (${stage.replace(/_/g, ' ')}): ${c.evidence || 'No public evidence available.'}\n\nProducts detected: ${c.known_products?.join(', ') || 'None'}\nProducts missing vs champions: ${CHAMPION_PRODUCTS.filter(p => !products.some(up => up.includes(p.toLowerCase()))).join(', ') || 'None — full coverage'}`,
   });
 };
 
 export const getOnboardingJourney = (id) => fetchJSON(`/api/onboarding/${id}/journey`, { events: [] });
-export const runOnboardingScan = () => postJSON('/api/onboarding/scan', {}, { scanned: DEMO_CUSTOMERS.total, changes: 0, stalls_detected: 0, plays_created: 0 });
+export const runOnboardingScan = () => {
+  const stalls = inferStalls(DEMO_CUSTOMERS.customers);
+  return postJSON('/api/onboarding/scan', {}, { scanned: DEMO_CUSTOMERS.total, changes: 0, stalls_detected: stalls.length, plays_created: stalls.length });
+};
 
 // ── Telemetry & Plays ──
 export const getPortfolio = () => fetchJSON('/api/telemetry/portfolio', DEMO_PORTFOLIO);
