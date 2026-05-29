@@ -2,6 +2,77 @@ import { useState, useEffect } from 'react';
 import { getIncidents, getIncident, generateIncidentComms } from '../api';
 import { DEMO_CUSTOMERS } from '../demo-data';
 
+function CommsViewer({ comms, onClose }) {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const current = comms[selectedIdx];
+
+  const downloadAll = () => {
+    comms.forEach((comm, i) => {
+      const text = `To: ${comm.customer_name}\nSubject: ${comm.subject}\nTier: ${(comm.tier || '').replace(/_/g, ' ')}\n\n${comm.body}`;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `comm_${(comm.customer_name || 'customer').replace(/\s+/g, '_').toLowerCase()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{ zIndex: 1100 }}>
+      <div className="modal-panel" style={{ maxWidth: '650px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0 }}>Communications ({comms.length})</h3>
+          <div className="flex gap-2">
+            <button className="btn btn-sm btn-primary" onClick={downloadAll}>Download All</button>
+            <button className="btn btn-sm" onClick={onClose}>Close</button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '16px' }}>
+          <select
+            value={selectedIdx}
+            onChange={(e) => setSelectedIdx(Number(e.target.value))}
+            style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', width: '100%' }}
+          >
+            {comms.map((c, i) => (
+              <option key={i} value={i}>
+                {c.customer_name || `Customer ${i + 1}`} — {(c.tier || '').replace(/_/g, ' ')}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {current && (
+          <div>
+            <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
+              <span className={`badge badge-${current.tier === 'critical_impact' ? 'critical' : current.tier === 'high_impact' ? 'at_risk' : 'monitor'}`}>
+                {(current.tier || '').replace(/_/g, ' ')}
+              </span>
+              <span style={{ fontSize: '14px', fontWeight: 600 }}>{current.customer_name}</span>
+            </div>
+            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>{current.subject}</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', whiteSpace: 'pre-wrap', lineHeight: '1.7', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '16px', border: '1px solid var(--border)' }}>
+              {current.body}
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+          <button className="btn btn-sm" disabled={selectedIdx === 0} onClick={() => setSelectedIdx(selectedIdx - 1)}>
+            Previous
+          </button>
+          <span className="text-muted" style={{ fontSize: '12px' }}>{selectedIdx + 1} of {comms.length}</span>
+          <button className="btn btn-sm" disabled={selectedIdx === comms.length - 1} onClick={() => setSelectedIdx(selectedIdx + 1)}>
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Incidents() {
   const [incidents, setIncidents] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -137,25 +208,12 @@ export default function Incidents() {
             );
           }) : <p className="text-muted">Loading impact assessment...</p>}
 
-          {comms && (
-            <div className="mt-4">
-              <h4 style={{ fontSize: '14px', marginBottom: '12px' }}>Generated Communications</h4>
-              {(comms.communications || []).map((comm, i) => (
-                <div className="comm-preview" key={i}>
-                  <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
-                    <span className={`badge badge-${comm.tier === 'critical_impact' ? 'critical' : comm.tier === 'high_impact' ? 'at_risk' : 'monitor'}`}>
-                      {(comm.tier || 'general').replace(/_/g, ' ')}
-                    </span>
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{comm.customer_name || ''}</span>
-                  </div>
-                  <h4>{comm.subject}</h4>
-                  <div className="body">{comm.body}</div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
         </div>
+      )}
+
+      {comms && (comms.communications || []).length > 0 && (
+        <CommsViewer comms={comms.communications} onClose={() => setComms(null)} />
       )}
     </div>
   );
