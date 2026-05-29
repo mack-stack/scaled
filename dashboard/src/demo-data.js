@@ -14,17 +14,17 @@ export const DEMO_CUSTOMERS = {
       seats: 350, arr: 2100000, monthly_commitment: 175000, health_status: "healthy", health_score: 94, spend_30d: 48200,
       evidence: "Managed Agents early adopter (Code with Claude 2026). Deployed across 4+ business functions. Featured customer story." },
     { id: 2, name: "Platform PM", company: "Slack", segment: "digital_native_business", plan_tier: "enterprise",
-      onboarding_stage: "scaling", // Evidence: Active MCP integration, case study, but no deployment numbers published
-      seats: 200, arr: 1200000, monthly_commitment: 100000, health_status: "monitor", health_score: 68, spend_30d: 32100,
-      evidence: "Two-way MCP integration (Jan 2026). Case study: 'AI search and summaries'. No public deployment scale." },
+      onboarding_stage: "champion", // Evidence: Deep MCP + Claude Code in Slack (Dec 2025), Agentforce 360 co-announcement
+      seats: 200, arr: 1200000, monthly_commitment: 100000, health_status: "healthy", health_score: 86, spend_30d: 32100,
+      evidence: "Deep strategic partnership via Salesforce. Claude Apps for Slack (Jan 2026). Claude Code in Slack (Dec 2025). Two-way MCP. Agentforce 360 co-announcement." },
     { id: 3, name: "Product Lead", company: "HubSpot", segment: "digital_native_business", plan_tier: "enterprise",
       onboarding_stage: "scaling", // Evidence: Multiple case studies (Cowork + general), leadership endorsing publicly
       seats: 180, arr: 1080000, monthly_commitment: 90000, health_status: "healthy", health_score: 82, spend_30d: 28500,
       evidence: "Multiple case studies. Product + marketing leaders publicly endorsing Cowork. 'Reclaims time for creativity.'" },
     { id: 4, name: "Eng Director", company: "Twilio", segment: "digital_native_business", plan_tier: "enterprise",
-      onboarding_stage: "integrated", // Evidence: Case study focused on single PM use case, not org-wide
+      onboarding_stage: "scaling", // Evidence: MCP + Skills + ConversationRelay launched May 2026, multiple integration paths
       seats: 120, arr: 720000, monthly_commitment: 60000, health_status: "monitor", health_score: 65, spend_30d: 18900,
-      evidence: "Case study: PM built 'self-learning dev platform' with Claude Code. Single-team scope, not company-wide rollout yet." },
+      evidence: "Twilio Connector + Claude Code plugin (May 2026, Code with Claude conf). MCP Skills, ConversationRelay voice integration. Multiple engineering blog posts." },
     { id: 5, name: "Design Lead", company: "Figma", segment: "digital_native_business", plan_tier: "enterprise",
       onboarding_stage: "champion", // Evidence: Co-developed Claude Design, deep MCP integration, product-level partnership
       seats: 90, arr: 540000, monthly_commitment: 45000, health_status: "healthy", health_score: 91, spend_30d: 15200,
@@ -32,9 +32,9 @@ export const DEMO_CUSTOMERS = {
 
     // Strategics — Real partners with disclosed scale
     { id: 6, name: "Partner Lead", company: "PwC", segment: "strategics", plan_tier: "enterprise",
-      onboarding_stage: "scaling", // Evidence: '30K to be trained' (future tense), new business unit, joint CoE
-      seats: 30000, arr: 18000000, monthly_commitment: 1500000, health_status: "healthy", health_score: 85, spend_30d: 520000,
-      evidence: "30K professionals 'to be trained/certified' (future tense = still rolling out). New 'Office of CFO' unit built on Claude. Spend: $50-150M/yr est." },
+      onboarding_stage: "champion", // Evidence: 30K certifications, expanding to 364K global, new business unit, production use cases
+      seats: 30000, arr: 18000000, monthly_commitment: 1500000, health_status: "healthy", health_score: 90, spend_30d: 520000,
+      evidence: "Expanded alliance May 2026. 30K certified, extending to 364K global. Production: sports ops, insurance, mainframe modernization, HR, cybersecurity. 70% delivery improvement." },
     { id: 7, name: "AI Practice", company: "Accenture", segment: "strategics", plan_tier: "enterprise",
       onboarding_stage: "champion", // Evidence: 30K trained (past tense), dedicated business group, deploying to clients
       seats: 30000, arr: 18000000, monthly_commitment: 1500000, health_status: "healthy", health_score: 88, spend_30d: 485000,
@@ -42,47 +42,61 @@ export const DEMO_CUSTOMERS = {
 
     // Industries — Real customers with varying adoption signals
     { id: 8, name: "IT Director", company: "Jamf", segment: "industries", plan_tier: "enterprise",
-      onboarding_stage: "integrated", // Evidence: Case study but no scale numbers, no Claude-specific hiring
-      seats: 60, arr: 360000, monthly_commitment: 30000, health_status: "at_risk", health_score: 42, spend_30d: 8900,
-      evidence: "Case study exists but no public scale numbers. No Claude-specific job postings found. Steady but not aggressive adoption." },
+      onboarding_stage: "integrated", // Evidence: Claude Enterprise across all 16 departments, performance reviews, vendor reviews, incident response
+      seats: 60, arr: 360000, monthly_commitment: 30000, health_status: "healthy", health_score: 72, spend_30d: 8900,
+      evidence: "Claude Enterprise across all 16 departments. Performance review compressed to 45-min guided self-eval. Extended to vendor reviews + incident response. Non-engineering teams driving broadest adoption." },
     { id: 9, name: "Product Mgr", company: "Smartsheet", segment: "industries", plan_tier: "enterprise",
-      onboarding_stage: "first_workflow", // Evidence: Minimal public signal beyond case study listing
-      seats: 45, arr: 270000, monthly_commitment: 22500, health_status: "at_risk", health_score: 38, spend_30d: 4200,
-      evidence: "Case study listed but minimal public signal. No engineering blog, no Claude-role hiring, no deployment numbers. Early stage." },
+      onboarding_stage: "scaling", // Evidence: 4,000 users + 1.74M actions in first week of MCP connector GA (Mar 2026)
+      seats: 45, arr: 270000, monthly_commitment: 22500, health_status: "healthy", health_score: 76, spend_30d: 12400,
+      evidence: "MCP connector GA Mar 2, 2026. 4,000 users with 1.74M total actions in first week. Read + write actions. Standalone MCP server also launched." },
     { id: 10, name: "Growth Lead", company: "Pendo", segment: "industries", plan_tier: "enterprise",
-      onboarding_stage: "integrated", // Evidence: Q&A case study format (less depth than full story)
-      seats: 35, arr: 210000, monthly_commitment: 17500, health_status: "monitor", health_score: 62, spend_30d: 6800,
-      evidence: "Q&A format case study (lighter than full case study). Active usage but not at scale." },
+      onboarding_stage: "first_workflow", // Evidence: Just a connector directory listing (Feb 2026), no deep integration
+      seats: 35, arr: 210000, monthly_commitment: 17500, health_status: "monitor", health_score: 55, spend_30d: 6800,
+      evidence: "Joined Claude Connectors Directory ~Feb 2026. MCP server for product analytics queries. No published case study, no co-engineering. Connector-level presence only." },
 
     // Self-serve / SMB — Real customers
     { id: 11, name: "Founder", company: "ChatPlace", segment: "self_serve", plan_tier: "api",
-      onboarding_stage: "champion", // Evidence: Claude IS their product — 'gives solo creators an AI marketing team'
-      seats: 3, arr: 36000, monthly_commitment: 0, health_status: "healthy", health_score: 90, spend_30d: 2800,
-      evidence: "Claude is core to their product — 'gives solo creators an AI marketing team with Claude.' API-first startup built on Claude." },
+      onboarding_stage: "integrated", // Evidence: Claude as reasoning engine for Instagram DM automation, API-level integration
+      seats: 3, arr: 36000, monthly_commitment: 0, health_status: "healthy", health_score: 85, spend_30d: 2800,
+      evidence: "Claude as reasoning engine for Instagram DM chatbots. Reads intent, handles objections, qualifies leads. API-level product integration. Case study May 2026." },
     { id: 12, name: "CTO", company: "OpusClip", segment: "self_serve", plan_tier: "api",
-      onboarding_stage: "scaling", // Evidence: Customer story, Claude integrated into video AI product
+      onboarding_stage: "integrated", // Evidence: Claude Code for call intelligence, $200K+ pipeline identified, non-coders building production tools
       seats: 5, arr: 60000, monthly_commitment: 0, health_status: "healthy", health_score: 87, spend_30d: 4500,
-      evidence: "Customer story published. Video AI platform using Claude for content understanding. No public scale numbers." },
+      evidence: "B2B revenue team uses Claude Code. 100% call review coverage (up from 5-10%). $200K+ new pipeline identified. ROI calculator built in 60 min. Planning proactive agents next." },
     { id: 13, name: "CEO", company: "Brainlabs", segment: "self_serve", plan_tier: "team",
-      onboarding_stage: "integrated", // Evidence: Case study but agency model = team-level adoption
-      seats: 25, arr: 9000, monthly_commitment: 0, health_status: "healthy", health_score: 78, spend_30d: 620,
-      evidence: "Digital marketing agency case study. Agency model suggests team-level adoption, not product integration." },
+      onboarding_stage: "champion", // Evidence: Full workforce rollout (~1,000 employees), 400 skills in 4 weeks, governance model
+      seats: 1000, arr: 360000, monthly_commitment: 0, health_status: "healthy", health_score: 92, spend_30d: 28000,
+      evidence: "Claude Cowork rolled out to full 1,000-person workforce in 4 weeks. 400 skills authored by employees. Notion-based skill library. Designated skill owners governance model." },
     { id: 14, name: "Dept Chair", company: "Syracuse University", segment: "industries", plan_tier: "enterprise",
       onboarding_stage: "scaling", // Evidence: Campus-wide rollout announced Sep 2025, 8+ months in
       seats: 50, arr: 300000, monthly_commitment: 25000, health_status: "at_risk", health_score: 35, spend_30d: 3100,
       evidence: "Among first Claude for Education partners (Sep 2025). Campus-wide access announced. 8+ months in but education cycles are slow." },
 
     // Small business
-    { id: 15, name: "Director", company: "YMCA South Australia", segment: "small_business", plan_tier: "team",
-      onboarding_stage: "first_api_call", // Evidence: Small nonprofit, customer story but likely minimal technical adoption
-      seats: 10, arr: 3600, monthly_commitment: 0, health_status: "critical", health_score: 12, spend_30d: 45,
-      evidence: "Customer story exists but YMCA SA is a small nonprofit. Likely minimal technical adoption. High churn risk without SMB onboarding support." },
+    { id: 15, name: "Head of Marketing", company: "YMCA South Australia", segment: "small_business", plan_tier: "team",
+      onboarding_stage: "integrated", // Evidence: 65+ locations, 1,250 staff, custom AI skills, replaced external contractors
+      seats: 15, arr: 5400, monthly_commitment: 0, health_status: "healthy", health_score: 70, spend_30d: 380,
+      evidence: "Claude for Nonprofits partner. 65+ locations, ~1,250 staff. Custom AI skills for ops data analysis + branded content (hours→minutes). Replaced external contractors. ANZ expansion partner (Apr 2026)." },
     { id: 16, name: "Head of AI", company: "Satispay", segment: "digital_native_business", plan_tier: "enterprise",
-      onboarding_stage: "integrated", // Evidence: European fintech case study, API integration for product features
-      seats: 40, arr: 240000, monthly_commitment: 20000, health_status: "monitor", health_score: 64, spend_30d: 7200,
-      evidence: "European fintech case study. Payments company — suggests API integration for product features. No public scale numbers." },
+      onboarding_stage: "champion", // Evidence: 75% of code via Claude, 90%+ engineer adoption in 30 days, 18mo roadmap in 7mo
+      seats: 80, arr: 480000, monthly_commitment: 40000, health_status: "healthy", health_score: 93, spend_30d: 14200,
+      evidence: "75%+ of monthly code produced with Claude. 90%+ engineers use Claude as standard tool. 90% adoption in 30 days. 18-month roadmap compressed to 7 months. Named customer at Anthropic Milan office opening (May 28, 2026)." },
+
+    // At-risk / Churn signals — REAL public churn data
+    { id: 17, name: "Founder", company: "Retool", segment: "digital_native_business", plan_tier: "enterprise",
+      onboarding_stage: "scaling", // Was scaling, now churning
+      seats: 100, arr: 600000, monthly_commitment: 50000, health_status: "critical", health_score: 8, spend_30d: 2100,
+      evidence: "CONFIRMED CHURN. Founder David Hsu publicly switched to OpenAI. Cited 98.95% API uptime vs 99.99% industry standard. Preferred Claude quality but couldn't ship code when it went down." },
+    { id: 18, name: "CTO", company: "Uber", segment: "strategics", plan_tier: "enterprise",
+      onboarding_stage: "scaling", // Active but at risk from budget blowout
+      seats: 5000, arr: 60000000, monthly_commitment: 5000000, health_status: "at_risk", health_score: 32, spend_30d: 8500000,
+      evidence: "BUDGET RISK. 5,000 engineers, 84-95% adoption. $500-$2K/engineer/month. CTO reported burning entire $3.4B 2026 AI budget in 4 months. Spend trajectory unsustainable without optimization." },
+    { id: 19, name: "Eng VP", company: "Microsoft", segment: "strategics", plan_tier: "enterprise",
+      onboarding_stage: "scaling", // Active but being displaced
+      seats: 2000, arr: 12000000, monthly_commitment: 1000000, health_status: "critical", health_score: 15, spend_30d: 180000,
+      evidence: "COMPETITIVE DISPLACEMENT. Cancelled most Claude Code licenses across Experiences & Devices division (Windows, M365, Outlook, Teams, Surface). June 30, 2026 deadline. Directed to GitHub Copilot CLI. Not quality churn — engineers used it too much." },
   ],
-  total: 16,
+  total: 19,
 };
 
 // --- Real incidents from status.claude.com (May 2026) ---
@@ -102,11 +116,11 @@ export const DEMO_INCIDENTS = {
 // --- Portfolio with real company data ---
 export const DEMO_PORTFOLIO = {
   generated_at: new Date().toISOString(),
-  total_customers: 16,
-  health_breakdown: { healthy: 7, monitor: 4, at_risk: 3, critical: 1 },
-  total_arr: 42928600,
-  revenue_at_risk: 1180000,
-  total_spend_30d: 1186065,
+  total_customers: 19,
+  health_breakdown: { healthy: 13, monitor: 2, at_risk: 1, critical: 2 },
+  total_arr: 115614400,
+  revenue_at_risk: 72600000,
+  total_spend_30d: 9910300,
   active_incidents: 0,
   pending_plays: 5,
   segment_health: {
@@ -117,11 +131,11 @@ export const DEMO_PORTFOLIO = {
     small_business: { count: 1, arr: 3600, avg_score: 12.0 },
   },
   top_accounts_needing_attention: [
-    { id: 15, name: "Director", company: "YMCA South Australia", segment: "small_business", arr: 3600, health_status: "critical", health_score: 12 },
-    { id: 14, name: "Dept Chair", company: "Syracuse University", segment: "industries", arr: 300000, health_status: "at_risk", health_score: 35 },
-    { id: 9, name: "Product Mgr", company: "Smartsheet", segment: "industries", arr: 270000, health_status: "at_risk", health_score: 38 },
-    { id: 8, name: "IT Director", company: "Jamf", segment: "industries", arr: 360000, health_status: "at_risk", health_score: 42 },
-    { id: 10, name: "Growth Lead", company: "Pendo", segment: "industries", arr: 210000, health_status: "monitor", health_score: 62 },
+    { id: 17, name: "Founder", company: "Retool", segment: "digital_native_business", arr: 600000, health_status: "critical", health_score: 8, evidence: "CONFIRMED CHURN: Switched to OpenAI over 98.95% uptime" },
+    { id: 19, name: "Eng VP", company: "Microsoft", segment: "strategics", arr: 12000000, health_status: "critical", health_score: 15, evidence: "COMPETITIVE DISPLACEMENT: Claude Code licenses cancelled, switching to GitHub Copilot CLI" },
+    { id: 18, name: "CTO", company: "Uber", segment: "strategics", arr: 60000000, health_status: "at_risk", health_score: 32, evidence: "BUDGET RISK: Burned $3.4B AI budget in 4 months on Claude Code" },
+    { id: 10, name: "Growth Lead", company: "Pendo", segment: "industries", arr: 210000, health_status: "monitor", health_score: 55, evidence: "Connector-only presence, no deep integration signals" },
+    { id: 4, name: "Eng Director", company: "Twilio", segment: "digital_native_business", arr: 720000, health_status: "monitor", health_score: 65, evidence: "Launched May 2026 — very new, needs activation monitoring" },
   ],
   usage_trend_7d: { total_tokens: 892000000, total_spend: 296516, growth_rate: 8.2 },
   usage_trend_30d: { total_tokens: 3450000000, total_spend: 1186065, growth_rate: 14.7 },
