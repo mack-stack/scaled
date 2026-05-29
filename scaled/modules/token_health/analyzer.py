@@ -201,37 +201,54 @@ def _compute_signals(customer: Customer, session) -> dict[str, Any]:
 # ── Heuristic fallback (no Claude API key) ────────────────────────────────
 
 def _heuristic_analysis(signals: dict[str, Any]) -> dict[str, Any]:
-    """Derive health score from signals without calling Claude."""
+    """Derive health score from signals without calling Claude.
+
+    Philosophy: every rate-limit event = an unproductive customer = a sad customer.
+    Rate limiting is the PRIMARY health signal, not a secondary metric.
+    A customer hitting caps frequently is at risk regardless of spend efficiency.
+    """
     score = 100
 
-    # Burn rate penalties
+    # ── Rate limiting (PRIMARY signal — highest weight) ──────────────
+    # Every rate limit = lost productivity = churn risk
+    rate_limit_pct = signals.get("rate_limit_hit_pct", 0)  # % of sessions hitting limit
+    if rate_limit_pct > 50:
+        score -= 40  # More than half their sessions are capped — critical
+    elif rate_limit_pct > 25:
+        score -= 25  # Frequent caps — at risk
+    elif rate_limit_pct > 10:
+        score -= 15  # Occasional caps — monitor
+    elif rate_limit_pct > 0:
+        score -= 5   # Rare caps — note it
+
+    # ── Burn rate (commitment overage risk) ──────────────────────────
     burn = signals.get("burn_rate_pct")
     if burn is not None:
         if burn > 150:
-            score -= 35
+            score -= 30
         elif burn > 120:
-            score -= 20
+            score -= 15
         elif burn > 100:
-            score -= 10
+            score -= 8
 
-    # Burn acceleration penalties
+    # ── Burn acceleration (trajectory) ───────────────────────────────
     accel = signals.get("burn_acceleration_pct")
     if accel is not None and accel > 25:
-        score -= 15
+        score -= 12
 
-    # Model mix: heavy Opus usage penalty
+    # ── Model mix efficiency ─────────────────────────────────────────
     expensive_pct = signals.get("most_expensive_model_pct", 0)
     if expensive_pct > 80:
-        score -= 15
+        score -= 12
     elif expensive_pct > 60:
-        score -= 8
+        score -= 6
 
-    # Cache utilization: low cache = wasted money
+    # ── Cache utilization (low cache = wasted money + faster cap hits) ──
     cache = signals.get("cache_hit_rate")
     if cache is not None and cache < 20:
         score -= 10
 
-    # Batch usage bonus (lack of batch = penalty)
+    # ── Batch usage (lack of batch = missing easy savings) ───────────
     batch = signals.get("batch_pct", 0)
     if batch < 5:
         score -= 5
@@ -248,6 +265,14 @@ def _heuristic_analysis(signals: dict[str, Any]) -> dict[str, Any]:
         status = HealthStatus.CRITICAL
 
     recommendations = []
+    # Rate limiting recommendations come FIRST — it's the loudest signal
+    if rate_limit_pct > 10:
+        recommendations.append(
+            f"Rate limiting detected on {rate_limit_pct}% of sessions. "
+            "Every cap hit = lost productivity. Consider upgrading plan tier, "
+            "optimizing token usage with caching/batching, or switching to "
+            "lighter models for non-critical tasks to stay under limits."
+        )
     if burn is not None and burn > 100:
         recommendations.append(
             f"Burn rate is at {burn}% of monthly commitment. "

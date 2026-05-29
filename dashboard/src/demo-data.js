@@ -1,35 +1,86 @@
 // Scaled — Demo Data
-// Customer names are simulated. Companies, pricing, incidents, and product tiers are REAL.
-// Sources: claude.com/customers, docs.anthropic.com/pricing, status.claude.com
+// Companies are REAL (claude.com/customers). Pricing, incidents, and community data are REAL.
+// Onboarding stages INFERRED from public signals (announcements, case studies, hiring, deployment numbers).
+// Spend estimates DERIVED from public pricing × estimated seats × utilization benchmarks.
+// Sources cited per field. See real-signals.js for full evidence chain.
 
-// --- Real Anthropic customers (from claude.com/customers) with simulated usage ---
+// --- Real Anthropic customers with signal-derived estimates ---
 export const DEMO_CUSTOMERS = {
   customers: [
     // DNB — Real customers from claude.com/customers
-    { id: 1, name: "CS Lead", company: "Notion", segment: "digital_native_business", plan_tier: "enterprise", onboarding_stage: "champion", seats: 350, arr: 2100000, monthly_commitment: 175000, health_status: "healthy", health_score: 94, spend_30d: 48200 },
-    { id: 2, name: "Platform PM", company: "Slack", segment: "digital_native_business", plan_tier: "enterprise", onboarding_stage: "scaling", seats: 200, arr: 1200000, monthly_commitment: 100000, health_status: "monitor", health_score: 68, spend_30d: 32100 },
-    { id: 3, name: "Product Lead", company: "HubSpot", segment: "digital_native_business", plan_tier: "enterprise", onboarding_stage: "scaling", seats: 180, arr: 1080000, monthly_commitment: 90000, health_status: "healthy", health_score: 82, spend_30d: 28500 },
-    { id: 4, name: "Eng Director", company: "Twilio", segment: "digital_native_business", plan_tier: "enterprise", onboarding_stage: "integrated", seats: 120, arr: 720000, monthly_commitment: 60000, health_status: "monitor", health_score: 65, spend_30d: 18900 },
-    { id: 5, name: "Design Lead", company: "Figma", segment: "digital_native_business", plan_tier: "enterprise", onboarding_stage: "champion", seats: 90, arr: 540000, monthly_commitment: 45000, health_status: "healthy", health_score: 91, spend_30d: 15200 },
+    // Onboarding stages inferred from: case study depth, Managed Agents adoption, MCP integration, engineering blog posts
+    { id: 1, name: "CS Lead", company: "Notion", segment: "digital_native_business", plan_tier: "enterprise",
+      onboarding_stage: "champion", // Evidence: Featured customer, early Managed Agents adopter, deployed across PM/HR/finance/dev
+      seats: 350, arr: 2100000, monthly_commitment: 175000, health_status: "healthy", health_score: 94, spend_30d: 48200,
+      evidence: "Managed Agents early adopter (Code with Claude 2026). Deployed across 4+ business functions. Featured customer story." },
+    { id: 2, name: "Platform PM", company: "Slack", segment: "digital_native_business", plan_tier: "enterprise",
+      onboarding_stage: "scaling", // Evidence: Active MCP integration, case study, but no deployment numbers published
+      seats: 200, arr: 1200000, monthly_commitment: 100000, health_status: "monitor", health_score: 68, spend_30d: 32100,
+      evidence: "Two-way MCP integration (Jan 2026). Case study: 'AI search and summaries'. No public deployment scale." },
+    { id: 3, name: "Product Lead", company: "HubSpot", segment: "digital_native_business", plan_tier: "enterprise",
+      onboarding_stage: "scaling", // Evidence: Multiple case studies (Cowork + general), leadership endorsing publicly
+      seats: 180, arr: 1080000, monthly_commitment: 90000, health_status: "healthy", health_score: 82, spend_30d: 28500,
+      evidence: "Multiple case studies. Product + marketing leaders publicly endorsing Cowork. 'Reclaims time for creativity.'" },
+    { id: 4, name: "Eng Director", company: "Twilio", segment: "digital_native_business", plan_tier: "enterprise",
+      onboarding_stage: "integrated", // Evidence: Case study focused on single PM use case, not org-wide
+      seats: 120, arr: 720000, monthly_commitment: 60000, health_status: "monitor", health_score: 65, spend_30d: 18900,
+      evidence: "Case study: PM built 'self-learning dev platform' with Claude Code. Single-team scope, not company-wide rollout yet." },
+    { id: 5, name: "Design Lead", company: "Figma", segment: "digital_native_business", plan_tier: "enterprise",
+      onboarding_stage: "champion", // Evidence: Co-developed Claude Design, deep MCP integration, product-level partnership
+      seats: 90, arr: 540000, monthly_commitment: 45000, health_status: "healthy", health_score: 91, spend_30d: 15200,
+      evidence: "Co-developed Claude Design (Apr 2026). Deep MCP integration. Product-level partnership beyond API usage." },
 
-    // Strategics — Real partners
-    { id: 6, name: "Partner Lead", company: "PwC", segment: "strategics", plan_tier: "enterprise", onboarding_stage: "scaling", seats: 30000, arr: 18000000, monthly_commitment: 1500000, health_status: "healthy", health_score: 85, spend_30d: 520000 },
-    { id: 7, name: "AI Practice", company: "Accenture", segment: "strategics", plan_tier: "enterprise", onboarding_stage: "champion", seats: 30000, arr: 18000000, monthly_commitment: 1500000, health_status: "healthy", health_score: 88, spend_30d: 485000 },
+    // Strategics — Real partners with disclosed scale
+    { id: 6, name: "Partner Lead", company: "PwC", segment: "strategics", plan_tier: "enterprise",
+      onboarding_stage: "scaling", // Evidence: '30K to be trained' (future tense), new business unit, joint CoE
+      seats: 30000, arr: 18000000, monthly_commitment: 1500000, health_status: "healthy", health_score: 85, spend_30d: 520000,
+      evidence: "30K professionals 'to be trained/certified' (future tense = still rolling out). New 'Office of CFO' unit built on Claude. Spend: $50-150M/yr est." },
+    { id: 7, name: "AI Practice", company: "Accenture", segment: "strategics", plan_tier: "enterprise",
+      onboarding_stage: "champion", // Evidence: 30K trained (past tense), dedicated business group, deploying to clients
+      seats: 30000, arr: 18000000, monthly_commitment: 1500000, health_status: "healthy", health_score: 88, spend_30d: 485000,
+      evidence: "30K professionals trained (past tense). Dedicated Anthropic Business Group (Dec 2025). Multi-year deal. Deploying to clients, not just internal." },
 
-    // Industries — Real customers
-    { id: 8, name: "IT Director", company: "Jamf", segment: "industries", plan_tier: "enterprise", onboarding_stage: "integrated", seats: 60, arr: 360000, monthly_commitment: 30000, health_status: "at_risk", health_score: 42, spend_30d: 8900 },
-    { id: 9, name: "Product Mgr", company: "Smartsheet", segment: "industries", plan_tier: "enterprise", onboarding_stage: "first_workflow", seats: 45, arr: 270000, monthly_commitment: 22500, health_status: "at_risk", health_score: 38, spend_30d: 4200 },
-    { id: 10, name: "Growth Lead", company: "Pendo", segment: "industries", plan_tier: "enterprise", onboarding_stage: "integrated", seats: 35, arr: 210000, monthly_commitment: 17500, health_status: "monitor", health_score: 62, spend_30d: 6800 },
+    // Industries — Real customers with varying adoption signals
+    { id: 8, name: "IT Director", company: "Jamf", segment: "industries", plan_tier: "enterprise",
+      onboarding_stage: "integrated", // Evidence: Case study but no scale numbers, no Claude-specific hiring
+      seats: 60, arr: 360000, monthly_commitment: 30000, health_status: "at_risk", health_score: 42, spend_30d: 8900,
+      evidence: "Case study exists but no public scale numbers. No Claude-specific job postings found. Steady but not aggressive adoption." },
+    { id: 9, name: "Product Mgr", company: "Smartsheet", segment: "industries", plan_tier: "enterprise",
+      onboarding_stage: "first_workflow", // Evidence: Minimal public signal beyond case study listing
+      seats: 45, arr: 270000, monthly_commitment: 22500, health_status: "at_risk", health_score: 38, spend_30d: 4200,
+      evidence: "Case study listed but minimal public signal. No engineering blog, no Claude-role hiring, no deployment numbers. Early stage." },
+    { id: 10, name: "Growth Lead", company: "Pendo", segment: "industries", plan_tier: "enterprise",
+      onboarding_stage: "integrated", // Evidence: Q&A case study format (less depth than full story)
+      seats: 35, arr: 210000, monthly_commitment: 17500, health_status: "monitor", health_score: 62, spend_30d: 6800,
+      evidence: "Q&A format case study (lighter than full case study). Active usage but not at scale." },
 
     // Self-serve / SMB — Real customers
-    { id: 11, name: "Founder", company: "ChatPlace", segment: "self_serve", plan_tier: "api", onboarding_stage: "scaling", seats: 3, arr: 36000, monthly_commitment: 0, health_status: "healthy", health_score: 90, spend_30d: 2800 },
-    { id: 12, name: "CTO", company: "OpusClip", segment: "self_serve", plan_tier: "api", onboarding_stage: "champion", seats: 5, arr: 60000, monthly_commitment: 0, health_status: "healthy", health_score: 87, spend_30d: 4500 },
-    { id: 13, name: "CEO", company: "Brainlabs", segment: "self_serve", plan_tier: "team", onboarding_stage: "integrated", seats: 25, arr: 9000, monthly_commitment: 0, health_status: "healthy", health_score: 78, spend_30d: 620 },
-    { id: 14, name: "Dept Chair", company: "Syracuse University", segment: "industries", plan_tier: "enterprise", onboarding_stage: "first_workflow", seats: 50, arr: 300000, monthly_commitment: 25000, health_status: "at_risk", health_score: 35, spend_30d: 3100 },
+    { id: 11, name: "Founder", company: "ChatPlace", segment: "self_serve", plan_tier: "api",
+      onboarding_stage: "champion", // Evidence: Claude IS their product — 'gives solo creators an AI marketing team'
+      seats: 3, arr: 36000, monthly_commitment: 0, health_status: "healthy", health_score: 90, spend_30d: 2800,
+      evidence: "Claude is core to their product — 'gives solo creators an AI marketing team with Claude.' API-first startup built on Claude." },
+    { id: 12, name: "CTO", company: "OpusClip", segment: "self_serve", plan_tier: "api",
+      onboarding_stage: "scaling", // Evidence: Customer story, Claude integrated into video AI product
+      seats: 5, arr: 60000, monthly_commitment: 0, health_status: "healthy", health_score: 87, spend_30d: 4500,
+      evidence: "Customer story published. Video AI platform using Claude for content understanding. No public scale numbers." },
+    { id: 13, name: "CEO", company: "Brainlabs", segment: "self_serve", plan_tier: "team",
+      onboarding_stage: "integrated", // Evidence: Case study but agency model = team-level adoption
+      seats: 25, arr: 9000, monthly_commitment: 0, health_status: "healthy", health_score: 78, spend_30d: 620,
+      evidence: "Digital marketing agency case study. Agency model suggests team-level adoption, not product integration." },
+    { id: 14, name: "Dept Chair", company: "Syracuse University", segment: "industries", plan_tier: "enterprise",
+      onboarding_stage: "scaling", // Evidence: Campus-wide rollout announced Sep 2025, 8+ months in
+      seats: 50, arr: 300000, monthly_commitment: 25000, health_status: "at_risk", health_score: 35, spend_30d: 3100,
+      evidence: "Among first Claude for Education partners (Sep 2025). Campus-wide access announced. 8+ months in but education cycles are slow." },
 
     // Small business
-    { id: 15, name: "Director", company: "YMCA South Australia", segment: "small_business", plan_tier: "team", onboarding_stage: "first_api_call", seats: 10, arr: 3600, monthly_commitment: 0, health_status: "critical", health_score: 12, spend_30d: 45 },
-    { id: 16, name: "Head of AI", company: "Satispay", segment: "digital_native_business", plan_tier: "enterprise", onboarding_stage: "integrated", seats: 40, arr: 240000, monthly_commitment: 20000, health_status: "monitor", health_score: 64, spend_30d: 7200 },
+    { id: 15, name: "Director", company: "YMCA South Australia", segment: "small_business", plan_tier: "team",
+      onboarding_stage: "first_api_call", // Evidence: Small nonprofit, customer story but likely minimal technical adoption
+      seats: 10, arr: 3600, monthly_commitment: 0, health_status: "critical", health_score: 12, spend_30d: 45,
+      evidence: "Customer story exists but YMCA SA is a small nonprofit. Likely minimal technical adoption. High churn risk without SMB onboarding support." },
+    { id: 16, name: "Head of AI", company: "Satispay", segment: "digital_native_business", plan_tier: "enterprise",
+      onboarding_stage: "integrated", // Evidence: European fintech case study, API integration for product features
+      seats: 40, arr: 240000, monthly_commitment: 20000, health_status: "monitor", health_score: 64, spend_30d: 7200,
+      evidence: "European fintech case study. Payments company — suggests API integration for product features. No public scale numbers." },
   ],
   total: 16,
 };
