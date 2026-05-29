@@ -17,20 +17,35 @@ export default function Incidents() {
   }, []);
 
   const viewIncident = (id) => {
+    console.log('viewIncident:', id);
     setSelected(id);
     setDetail(null);
     setComms(null);
-    getIncident(id).then(setDetail).catch(console.error);
+    getIncident(id).then((res) => {
+      console.log('getIncident result:', res);
+      setDetail(res);
+    }).catch((err) => console.error('getIncident error:', err));
   };
 
   const assess = (id) => {
+    console.log('assessIncident:', id);
     setAssessing(true);
-    assessIncident(id).then(setDetail).catch(console.error).finally(() => setAssessing(false));
+    assessIncident(id).then((res) => {
+      console.log('assessIncident result keys:', Object.keys(res || {}));
+      console.log('has impact:', !!res?.impact);
+      console.log('tiers:', Object.keys(res?.impact?.tiers || {}));
+      // Force new object reference so React re-renders
+      setDetail({ ...res, _ts: Date.now() });
+    }).catch((err) => console.error('assessIncident error:', err)).finally(() => setAssessing(false));
   };
 
   const genComms = (id) => {
+    console.log('genComms:', id);
     setGeneratingComms(true);
-    generateIncidentComms(id).then(setComms).catch(console.error).finally(() => setGeneratingComms(false));
+    generateIncidentComms(id).then((res) => {
+      console.log('genComms result:', res);
+      setComms(res);
+    }).catch((err) => console.error('genComms error:', err)).finally(() => setGeneratingComms(false));
   };
 
   if (loading) return <div className="loading"><div className="spinner" />Loading incidents...</div>;
